@@ -194,18 +194,16 @@ if st.button("Calcola", key="calcola_btn"):
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("### Oppure carica un CSV con i dati")
 
-# CSS per ingrandire e rendere visibile il bottone
+# CSS per bottone piccolo e discreto
 st.markdown(
     """
     <style>
-    div.stFileUploader > label > div {
-        font-size: 18px;
-        height: 60px;
-        line-height: 60px;
-        border-radius: 12px;
-        background-color: #1976D2;
-        color: white;
-        text-align: center;
+    /* Bottone piccolo per file uploader */
+    div.stFileUploader > label > div > div {
+        font-size: 12px;
+        height: auto;
+        line-height: normal;
+        text-align: left;
     }
     </style>
     """,
