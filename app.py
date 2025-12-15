@@ -69,8 +69,8 @@ st.markdown("### Calcolatore rapido")
 # Creiamo tre colonne
 col_label, col_input, col_output = st.columns([2, 1, 1])
 
-# Testo (aggiungiamo <div style="margin-top:8px"> per centrare verticalmente)
-col_label.markdown('<div style="margin-top:8px"><b>Quanti watt faccio per questo tempo?</b></div>', unsafe_allow_html=True)
+# Testo
+col_label.write("**Quanti watt faccio per questo tempo?**")
 
 # Input tempo (s)
 t_calc = col_input.number_input("", min_value=1, value=60, step=1, format="%d", key="t_calc_minimal")
@@ -82,9 +82,9 @@ if "params_computed" in st.session_state:
         t_calc, 
         params["CP_b"], params["W_prime_b"], params["Pmax_b"], params["A_b"], params["B_b"]
     )
-    col_output.markdown(f"**{t_calc}s → {int(round(P_calc))} W**")
+    col_output.write(f"**{t_calc}s → {int(round(P_calc))} W**")
 else:
-    col_output.markdown(f"**{t_calc}s → W**")
+    col_output.write(f"**{t_calc}s → W**")
 
 # =========================
 # Pulsante Calcola
