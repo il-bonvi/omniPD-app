@@ -55,6 +55,34 @@ Per avere valori di **A** inserisci **MMP oltre i 30 minuti** (opzionale).
 )
 
 # =========================
+# Import CSV (modulo indipendente)
+st.markdown("### Importa dati da CSV (opzionale)")
+
+uploaded_file = st.file_uploader("Carica un file CSV", type=["csv"])
+
+if uploaded_file is not None:
+    try:
+        df_csv = pd.read_csv(uploaded_file)
+        st.dataframe(df_csv.head())  # mostra anteprima
+
+        # Permetti all'utente di scegliere colonne
+        col_time = st.selectbox("Seleziona la colonna che rappresenta il TEMPO", options=df_csv.columns)
+        col_power = st.selectbox("Seleziona la colonna che rappresenta la POTENZA", options=df_csv.columns)
+
+        # Bottone per confermare importazione
+        if st.button("Importa dati CSV"):
+            time_values_csv = df_csv[col_time].dropna().astype(float).tolist()
+            power_values_csv = df_csv[col_power].dropna().astype(float).tolist()
+            st.success(f"Dati importati correttamente: {len(time_values_csv)} punti")
+            
+            # Salva in session_state per usarli nel calcolo
+            st.session_state["time_values_csv"] = time_values_csv
+            st.session_state["power_values_csv"] = power_values_csv
+
+    except Exception as e:
+        st.error(f"Errore durante la lettura del CSV: {e}")
+
+# =========================
 # Input dati
 num_rows = st.number_input("Numero di punti dati", min_value=4, max_value=20, value=4, step=1)
 
