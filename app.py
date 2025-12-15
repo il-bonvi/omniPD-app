@@ -5,6 +5,13 @@ import streamlit as st
 import plotly.graph_objects as go
 
 # =========================
+# Imposta la modalità wide all’inizio
+st.set_page_config(
+    page_title="Bonvi omniPD model calculator",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+# =========================
 # Costante di modello
 TCPMAX = 1800  # secondi
 
