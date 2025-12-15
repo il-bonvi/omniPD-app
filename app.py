@@ -75,16 +75,6 @@ for i in range(num_rows):
         pass
 
 # =========================
-# Calcolatore rapido
-st.markdown("<div style='font-size:14px; margin-bottom:5px;'><b>Opzionale: inserisci t per sapere quanti watt riesci a fare</b></div>", unsafe_allow_html=True)
-col = st.columns([1])[0]
-t_str = col.text_input("Inserisci tempo (s)", value="1200", key="t_calc_text")
-try:
-    t_calc = max(1, int(t_str))
-except:
-    t_calc = 60
-
-# =========================
 # Funzione di calcolo e visualizzazione
 def calcola_e_mostra(time_values, power_values):
     df = pd.DataFrame({"t": time_values, "P": power_values})
@@ -149,7 +139,6 @@ def calcola_e_mostra(time_values, power_values):
 
     # Grafici
     T_plot = np.logspace(np.log10(1.0), np.log10(max(max(df["t"])*1.1, 180*60)), 500)
-    # OmPD
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(x=df["t"], y=df["P"], mode='markers', name="Dati reali", marker=dict(symbol='x', size=10)))
     fig1.add_trace(go.Scatter(x=T_plot, y=ompd_power(T_plot,*params), mode='lines', name="OmPD"))
@@ -162,7 +151,6 @@ def calcola_e_mostra(time_values, power_values):
     fig1.update_layout(title="OmPD Curve", hovermode="x unified", height=700)
     st.plotly_chart(fig1)
 
-    # Residuals
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(x=df["t"], y=residuals, mode='lines+markers', name="Residuals", marker=dict(symbol='x', size=8), line=dict(color='red')))
     fig2.add_hline(y=0, line=dict(color='black', dash='dash'))
@@ -171,7 +159,6 @@ def calcola_e_mostra(time_values, power_values):
     fig2.update_layout(title="Residuals", hovermode="x unified", height=700)
     st.plotly_chart(fig2)
 
-    # W'eff
     fig3 = go.Figure()
     fig3.add_trace(go.Scatter(x=T_plot_w, y=Weff_plot, mode='lines', name="W'eff", line=dict(color='green')))
     fig3.add_hline(y=w_99, line=dict(color='blue', dash='dash'))
@@ -192,9 +179,7 @@ if st.button("Calcola"):
 # File uploader CSV piccolo
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("### Oppure carica un CSV con i dati")
-
-st.markdown(
-    """
+st.markdown("""
     <style>
     div.stFileUploader > label > div > div {
         font-size: 12px;
@@ -203,9 +188,7 @@ st.markdown(
         text-align: left;
     }
     </style>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("(opzionale) Carica un file CSV", type=["csv"])
 
@@ -225,10 +208,26 @@ if uploaded_file is not None:
             st.session_state["power_values_csv"] = power_values_csv
             st.success(f"Dati importati: {len(time_values_csv)} punti")
 
-            # Esegui calcolo e visualizza subito
+            # Calcolo e visualizzazione immediata
             calcola_e_mostra(time_values_csv, power_values_csv)
 
-    except Exception as e:
-        st.error(f"Errore durante la lettura del CSV: {e}")
+# =========================
+# Calcolatore rapido funzionante
+st.markdown("<div style='font-size:14px; margin-bottom:5px;'><b>Opzionale: inserisci t per sapere quanti watt riesci a fare</b></div>", unsafe_allow_html=True)
+col_calc = st.columns([1])[0]
+t_str = col_calc.text_input("Inserisci tempo (s)", value="1200", key="t_calc_final")
+try:
+    t_calc = max(1, int(t_str))
+except:
+    t_calc = 60
 
-
+if "params_computed" in st.session_state:
+    p = st.session_state["params_computed"]
+    P_calc = ompd_power_with_bias(
+        t_calc,
+        p["CP_b"], p["W_prime_b"], p["Pmax_b"], p["A_b"], p["B_b"]
+    )
+    time_label = _format_time_label_custom(t_calc)
+    col_calc.markdown(f"**{time_label} → {int(round(P_calc))} W**")
+else:
+    col_calc.markdown("⚠ Calcola prima i parametri con 'Calcola' o importa un CSV")
