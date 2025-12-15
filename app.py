@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 # =========================
 # Imposta la modalità wide
 st.set_page_config(
-    page_title="Bonvi omniPD model calculator <3",
+    page_title="Bonvi omniPD model calculator",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -44,7 +44,7 @@ def _format_time_label_custom(seconds):
 
 # =========================
 # Titolo e info
-st.title("Bonvi omniPD model calculator")
+st.title("Bonvi omniPD model calculator <3")
 st.markdown(
     """
 Inserisci almeno **4 punti dati** (tra cui **sprint**) tempo (s) e potenza (W).  
