@@ -133,40 +133,79 @@ if st.button("Calcola"):
         durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]  # in secondi
         predicted_powers = [int(round(float(ompd_power(t, CP, W_prime, Pmax, A)))) for t in durations_s]
 
-if st.button("Calcola"):
-    # ... calcolo parametri CP, W_prime, Pmax, A, ecc.
+if st.button("Calcola", key="calcola_btn"):
+    data = [(t, P) for t, P in zip(time_values, power_values) if t is not None and P is not None]
 
-    # Calcolo valori teorici
-    durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]
-    predicted_powers = [int(round(float(ompd_power(t, CP, W_prime, Pmax, A)))) for t in durations_s]
+    if len(data) < 4:
+        st.error("Errore: inserire almeno 4 punti dati validi.")
+    else:
+        df = pd.DataFrame(data, columns=["t","P"])
 
-    # =========================
-    # Mostra i 3 riquadri sopra i grafici
-    col1, col2, col3 = st.columns(3)
+        # ------------------------
+        # Fit OmPD standard
+        initial_guess = [np.percentile(df["P"],30), 20000, df["P"].max(), 5]
+        params, _ = curve_fit(ompd_power, df["t"].values, df["P"].values,
+                              p0=initial_guess, maxfev=20000)
+        CP, W_prime, Pmax, A = params
 
-    with col1:
-        st.markdown("**Parametri stimati**")
-        st.markdown(f"CP: {int(round(CP))} W")
-        st.markdown(f"W': {int(round(W_prime))} J")
-        st.markdown(f"99% W'eff at {_format_time_label_custom(t_99)}")
-        st.markdown(f"Pmax: {int(round(Pmax))} W")
-        st.markdown(f"A: {A:.2f}")
+        # Fit OmPD con bias
+        initial_guess_bias = [np.percentile(df["P"],30),20000,df["P"].max(),5,0]
+        param_bounds = ([0,0,0,0,-100], [1000,50000,5000,100,100])
+        params_bias, _ = curve_fit(ompd_power_with_bias,
+                                   df["t"].values.astype(float),
+                                   df["P"].values.astype(float),
+                                   p0=initial_guess_bias,
+                                   bounds=param_bounds,
+                                   maxfev=20000)
+        CP_b, W_prime_b, Pmax_b, A_b, B_b = params_bias
+        P_pred = ompd_power_with_bias(df["t"].values.astype(float), *params_bias)
+        residuals = df["P"].values.astype(float) - P_pred
+        RMSE = np.sqrt(np.mean(residuals**2))
+        MAE = np.mean(np.abs(residuals))
+        bias_real = B_b
 
-    with col2:
-        st.markdown("**Residual summary**")
-        st.markdown(f"RMSE: {RMSE:.2f} W")
-        st.markdown(f"MAE: {MAE:.2f} W")
-        st.markdown(f"Bias: {bias_real:.2f} W")
+        # W'eff
+        T_plot_w = np.linspace(1, 3*60, 500)
+        Weff_plot = w_eff(T_plot_w, W_prime, CP, Pmax)
+        W_99 = 0.99 * W_prime
+        t_99_idx = np.argmin(np.abs(Weff_plot - W_99))
+        t_99 = T_plot_w[t_99_idx]
+        w_99 = Weff_plot[t_99_idx]
 
-    with col3:
-        st.markdown("**Valori teorici**")
-        for t, p in zip(durations_s, predicted_powers):
-            minutes = t // 60
-            st.markdown(f"{minutes}m: {p} W")
+        # ------------------------
+        # Grafici
+        # ... (fig1, fig2, fig3 come prima) ...
 
-    # =========================
-    # Grafici
-    st.plotly_chart(fig1)
-    st.plotly_chart(fig2)
-    st.plotly_chart(fig3)
+        # ------------------------
+        # Valori teorici
+        durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]
+        predicted_powers = [int(round(float(ompd_power(t, CP, W_prime, Pmax, A)))) for t in durations_s]
 
+        # ------------------------
+        # Mostra riquadri sopra grafici
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("**Parametri stimati**")
+            st.markdown(f"CP: {int(round(CP))} W")
+            st.markdown(f"W': {int(round(W_prime))} J")
+            st.markdown(f"99% W'eff at {_format_time_label_custom(t_99)}")
+            st.markdown(f"Pmax: {int(round(Pmax))} W")
+            st.markdown(f"A: {A:.2f}")
+
+        with col2:
+            st.markdown("**Residual summary**")
+            st.markdown(f"RMSE: {RMSE:.2f} W")
+            st.markdown(f"MAE: {MAE:.2f} W")
+            st.markdown(f"Bias: {bias_real:.2f} W")
+
+        with col3:
+            st.markdown("**Valori teorici**")
+            for t, p in zip(durations_s, predicted_powers):
+                minutes = t // 60
+                st.markdown(f"{minutes}m: {p} W")
+
+        # ------------------------
+        # Mostra grafici
+        st.plotly_chart(fig1)
+        st.plotly_chart(fig2)
+        st.plotly_chart(fig3)
