@@ -217,6 +217,7 @@ if uploaded_file is not None:
 
 # =========================
 # Calcolatore rapido funzionante
+st.markdown("<hr>", unsafe_allow_html=True)
 col_calc = st.columns([1])[0]
 t_str = col_calc.text_input("(opzionale) Inserisci t (in s) per sapere quanti watt riesci a fare", value="1200", key="t_calc_final")
 try:
