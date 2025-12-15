@@ -66,7 +66,8 @@ for i in range(num_rows):
 # Calcolatore rapido compatto, output sotto label
 # =========================
 
-st.markdown("Opzionale")  # Label in alto a sinistra
+# Markdown con font più piccolo
+st.markdown("<div style='font-size:12px; margin-bottom:5px;'><b>Opzionale</b></div>", unsafe_allow_html=True)
 
 # Creiamo una colonna singola per input e output allineati a sinistra
 col = st.columns([1])[0]
