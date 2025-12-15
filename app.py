@@ -197,7 +197,7 @@ uploaded_file = st.file_uploader("(opzionale) Carica un file CSV", type=["csv"])
 if uploaded_file is not None:
     try:
         df_csv = pd.read_csv(uploaded_file)
-        st.dataframe(df_csv.head())
+        st.dataframe(df_csv.head(20), height=300, width=700)
         col_time = st.selectbox("Seleziona la colonna TEMPO", options=df_csv.columns)
         col_power = st.selectbox("Seleziona la colonna POTENZA", options=df_csv.columns)
 
@@ -232,6 +232,6 @@ if "params_computed" in st.session_state:
         p["CP_b"], p["W_prime_b"], p["Pmax_b"], p["A_b"], p["B_b"]
     )
     time_label = _format_time_label_custom(t_calc)
-    col_calc.markdown(f"**{time_label} → {int(round(P_calc))} W**  (per aggiornare usare il pulsante \"Calcola\" O \"Importa dati CSV e calcola\")")
+    col_calc.markdown(f"**{time_label} → {int(round(P_calc))} W** | (per aggiornare usare il pulsante \"Calcola\" O \"Importa dati CSV e calcola\")")
 else:
     col_calc.markdown("⚠ Per calcolare, scrollare e premere il 'Calcola' in alto'")
