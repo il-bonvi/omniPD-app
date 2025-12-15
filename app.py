@@ -64,7 +64,7 @@ for i in range(num_rows):
     if i == 0:
         label = "Sprint (1–10s)"
     else:
-        label = f"Test {i}"
+        label = f"#{i}"
 
     t_str = cols[0].text_input(
         f"{label} – Time (s)",
