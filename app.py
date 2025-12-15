@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 # =========================
 # Imposta la modalità wide
 st.set_page_config(
-    page_title="Bonvi omniPD model calculator",
+    page_title="Bonvi omniPD model calculator <3",
     layout="wide",
     initial_sidebar_state="expanded"
 )
