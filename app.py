@@ -63,33 +63,32 @@ for i in range(num_rows):
         pass  # ignora input vuoti o non numerici
 
 # =========================
-# Calcolatore rapido prima del tasto Calcola
-st.markdown("### Calcolatore rapido")
+# Calcolatore rapido compatto
+# =========================
 
 col_label, col_input, col_output = st.columns([2, 1, 1])
 
-# Testo
-col_label.write("**Quanti watt faccio per questo tempo?**")
+# Label breve per stare sulla stessa riga
+col_label.markdown("**Watt per tempo**")
 
-# Input tempo come text_input (più compatto verticalmente)
+# Input tempo
 t_str = col_input.text_input("", value="60", key="t_calc_text")
 try:
-    t_calc = int(t_str)
-    if t_calc < 1:
-        t_calc = 1
+    t_calc = max(1, int(t_str))  # forza tempo ≥ 1 s
 except:
     t_calc = 60
 
-# Output potenza stimata
+# Calcolo potenza solo se parametri già calcolati
 if "params_computed" in st.session_state:
-    params = st.session_state["params_computed"]
+    p = st.session_state["params_computed"]
     P_calc = ompd_power_with_bias(
         t_calc,
-        params["CP_b"], params["W_prime_b"], params["Pmax_b"], params["A_b"], params["B_b"]
+        p["CP_b"], p["W_prime_b"], p["Pmax_b"], p["A_b"], p["B_b"]
     )
-    col_output.write(f"**{t_calc}s → {int(round(P_calc))} W**")
+    col_output.markdown(f"**{t_calc}s → {int(round(P_calc))} W**")
 else:
-    col_output.write(f"**{t_calc}s → W**")
+    col_output.markdown(f"**{t_calc}s → W**")
+
 
 # =========================
 # Pulsante Calcola
