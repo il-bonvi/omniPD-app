@@ -55,24 +55,23 @@ num_rows = st.number_input("Numero di punti dati", min_value=4, max_value=20, va
 # Input dati con label personalizzate
 # =========================
 
-time_labels = ["Sprint (1-10s)", "Test 1", "Test 2", "Test 3", "Altro"]
-
 time_values = []
 power_values = []
 
 for i in range(num_rows):
     cols = st.columns(2)
 
-    label = time_labels[i] if i < len(time_labels) else f"Test {i+1}"
+    if i == 0:
+        label = "Sprint (1–10s)"
+    else:
+        label = f"Test {i}"
 
-    # Time input
     t_str = cols[0].text_input(
         f"{label} – Time (s)",
         value="",
         key=f"time_{i}"
     )
 
-    # Power input
     P_str = cols[1].text_input(
         f"{label} – Power (W)",
         value="",
