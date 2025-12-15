@@ -149,13 +149,18 @@ def calcola_e_mostra(time_values, power_values):
             st.markdown(f"{minutes}m: {p} W")
 
     if col4 is not None:
-        with col4:
-            st.markdown("**Valori reali CSV**")
-            df_csv_values = pd.DataFrame({
-                "Tempo (s)": st.session_state["time_values_csv"],
-                "Potenza (W)": st.session_state["power_values_csv"]
-            })
-            st.dataframe(df_csv_values, height=200)
+         with col4:
+             st.markdown("**Valori reali CSV (match teorici)**")
+             # Trasforma le durate in secondi
+             match_durations = durations_s
+             # Calcola la potenza stimata dalla curva OmPD per queste durate
+             P_match = [int(round(float(ompd_power(t, CP, W_prime, Pmax, A)))) for t in match_durations]
+             df_match = pd.DataFrame({
+                 "Durata": [f"{t//60}m" for t in match_durations],
+                 "Potenza stimata (W)": P_match
+             })
+             st.dataframe(df_match, height=200)
+
 
     # =========================
     # Grafici
