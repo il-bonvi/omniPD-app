@@ -49,15 +49,16 @@ power_values = []
 
 for i in range(num_rows):
     cols = st.columns(2)
-    t = cols[0].number_input(f"Time (s) #{i+1}", min_value=1, value=60, step=1, format="%d")
-    P = cols[1].number_input(f"Power (W) #{i+1}", min_value=1, value=300, step=1, format="%d")
+    t = cols[0].number_input(f"Time (s) #{i+1}", min_value=1, value=0, step=1, format="%d", key=f"time_{i}")
+    P = cols[1].number_input(f"Power (W) #{i+1}", min_value=1, value=0, step=1, format="%d", key=f"power_{i}")
     time_values.append(t)
     power_values.append(P)
 
 # =========================
-# Calcolo
-if st.button("Calcola"):
-    data = [(t, P) for t, P in zip(time_values, power_values) if t is not None and P is not None]
+# Calcolo e visualizzazione
+if st.button("Calcola", key="calcola_btn"):
+    # Filtra solo valori validi
+    data = [(t, P) for t, P in zip(time_values, power_values) if t > 0 and P > 0]
     
     if len(data) < 4:
         st.error("Errore: inserire almeno 4 punti dati validi.")
@@ -92,10 +93,9 @@ if st.button("Calcola"):
         W_99 = 0.99 * W_prime
         t_99_idx = np.argmin(np.abs(Weff_plot - W_99))
         t_99 = T_plot_w[t_99_idx]
-        w_99 = Weff_plot[t_99_idx]
 
         # =========================
-        # Grafico OmPD
+        # Grafici
         T_plot = np.logspace(np.log10(1.0), np.log10(max(max(df["t"])*1.1, 180*60)), 500)
         fig1 = go.Figure()
         fig1.add_trace(go.Scatter(x=df["t"], y=df["P"], mode='markers', name="Dati reali", marker=dict(symbol='x', size=10)))
@@ -108,8 +108,6 @@ if st.button("Calcola"):
         fig1.update_yaxes(title_text="Power (W)")
         fig1.update_layout(title="OmPD Curve", hovermode="x unified", height=700)
 
-        # =========================
-        # Grafico Residuals
         fig2 = go.Figure()
         fig2.add_trace(go.Scatter(x=df["t"], y=residuals, mode='lines+markers', name="Residuals", marker=dict(symbol='x', size=8), line=dict(color='red')))
         fig2.add_hline(y=0, line=dict(color='black', dash='dash'))
@@ -117,11 +115,9 @@ if st.button("Calcola"):
         fig2.update_yaxes(title_text="Residuals (W)")
         fig2.update_layout(title="Residuals", hovermode="x unified", height=700)
 
-        # =========================
-        # Grafico W'eff
         fig3 = go.Figure()
         fig3.add_trace(go.Scatter(x=T_plot_w, y=Weff_plot, mode='lines', name="W'eff", line=dict(color='green')))
-        fig3.add_hline(y=w_99, line=dict(color='blue', dash='dash'))
+        fig3.add_hline(y=W_99, line=dict(color='blue', dash='dash'))
         fig3.add_vline(x=t_99, line=dict(color='blue', dash='dash'))
         fig3.add_annotation(x=t_99, y=W_99, text=f"99% W'eff at {_format_time_label_custom(t_99)}", showarrow=True, arrowhead=2)
         fig3.update_xaxes(title_text="Time (s)")
@@ -130,37 +126,35 @@ if st.button("Calcola"):
 
         # =========================
         # Calcolo valori teorici
-        durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]  # in secondi
+        durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]
         predicted_powers = [int(round(float(ompd_power(t, CP, W_prime, Pmax, A)))) for t in durations_s]
 
-if st.button("Calcola", key="calcola_btn"):
-    # ... calcoli CP, W_prime, Pmax, A ...
-    # ... grafici fig1, fig2, fig3 ...
+        # =========================
+        # Mostra riquadri sopra grafici
+        col1, col2, col3 = st.columns(3)
 
-    # Mostra riquadri
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("**Parametri stimati**")
-        st.markdown(f"CP: {int(round(CP))} W")
-        st.markdown(f"W': {int(round(W_prime))} J")
-        st.markdown(f"99% W'eff at {_format_time_label_custom(t_99)}")
-        st.markdown(f"Pmax: {int(round(Pmax))} W")
-        st.markdown(f"A: {A:.2f}")
+        with col1:
+            st.markdown("**Parametri stimati**")
+            st.markdown(f"CP: {int(round(CP))} W")
+            st.markdown(f"W': {int(round(W_prime))} J")
+            st.markdown(f"99% W'eff at {_format_time_label_custom(t_99)}")
+            st.markdown(f"Pmax: {int(round(Pmax))} W")
+            st.markdown(f"A: {A:.2f}")
 
-    with col2:
-        st.markdown("**Residual summary**")
-        st.markdown(f"RMSE: {RMSE:.2f} W")
-        st.markdown(f"MAE: {MAE:.2f} W")
-        st.markdown(f"Bias: {bias_real:.2f} W")
+        with col2:
+            st.markdown("**Residual summary**")
+            st.markdown(f"RMSE: {RMSE:.2f} W")
+            st.markdown(f"MAE: {MAE:.2f} W")
+            st.markdown(f"Bias: {bias_real:.2f} W")
 
-    with col3:
-        st.markdown("**Valori teorici**")
-        for t, p in zip(durations_s, predicted_powers):
-            minutes = t // 60
-            st.markdown(f"{minutes}m: {p} W")
+        with col3:
+            st.markdown("**Valori teorici**")
+            for t, p in zip(durations_s, predicted_powers):
+                minutes = t // 60
+                st.markdown(f"{minutes}m: {p} W")
 
-    # Mostra grafici
-    st.plotly_chart(fig1)
-    st.plotly_chart(fig2)
-    st.plotly_chart(fig3)
-
+        # =========================
+        # Mostra grafici
+        st.plotly_chart(fig1)
+        st.plotly_chart(fig2)
+        st.plotly_chart(fig3)
