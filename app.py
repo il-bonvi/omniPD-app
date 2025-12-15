@@ -55,10 +55,8 @@ Per avere valori di **A** inserisci **MMP oltre i 30 minuti** (opzionale).
 )
 
 # =========================
-# Import CSV (modulo indipendente)
-st.markdown("### Importa dati da CSV (opzionale)")
-
-uploaded_file = st.file_uploader("Carica un file CSV", type=["csv"])
+# Import CSV (modulo indipendente con calcolo automatico)
+uploaded_file = st.file_uploader("(opzionale) carica un file CSV", type=["csv"])
 
 if uploaded_file is not None:
     try:
@@ -69,15 +67,53 @@ if uploaded_file is not None:
         col_time = st.selectbox("Seleziona la colonna che rappresenta il TEMPO", options=df_csv.columns)
         col_power = st.selectbox("Seleziona la colonna che rappresenta la POTENZA", options=df_csv.columns)
 
-        # Bottone per confermare importazione
-        if st.button("Importa dati CSV"):
-            time_values_csv = df_csv[col_time].dropna().astype(float).tolist()
-            power_values_csv = df_csv[col_power].dropna().astype(float).tolist()
-            st.success(f"Dati importati correttamente: {len(time_values_csv)} punti")
-            
-            # Salva in session_state per usarli nel calcolo
-            st.session_state["time_values_csv"] = time_values_csv
-            st.session_state["power_values_csv"] = power_values_csv
+        # Bottone per importare e calcolare
+        if st.button("Importa dati CSV e calcola"):
+            # Aggiorna session_state
+            st.session_state["time_values_csv"] = df_csv[col_time].dropna().astype(float).tolist()
+            st.session_state["power_values_csv"] = df_csv[col_power].dropna().astype(float).tolist()
+            st.success(f"Dati importati correttamente: {len(st.session_state['time_values_csv'])} punti")
+
+            # Sovrascrive le variabili locali usate dal tuo script
+            time_values = st.session_state["time_values_csv"]
+            power_values = st.session_state["power_values_csv"]
+
+            # =========================
+            # Esegui automaticamente il blocco di calcolo
+            if len(time_values) < 4:
+                st.error("Errore: inserire almeno 4 punti dati validi.")
+            else:
+                df = pd.DataFrame({"t": time_values, "P": power_values})
+
+                # Fit OmPD standard
+                initial_guess = [np.percentile(df["P"],30), 20000, df["P"].max(), 5]
+                params, _ = curve_fit(ompd_power, df["t"].values, df["P"].values, p0=initial_guess, maxfev=20000)
+                CP, W_prime, Pmax, A = params
+
+                # Fit OmPD con bias
+                initial_guess_bias = [np.percentile(df["P"],30),20000,df["P"].max(),5,0]
+                param_bounds = ([0,0,0,0,-100], [1000,50000,5000,100,100])
+                params_bias, _ = curve_fit(
+                    ompd_power_with_bias,
+                    df["t"].values.astype(float),
+                    df["P"].values.astype(float),
+                    p0=initial_guess_bias,
+                    bounds=param_bounds,
+                    maxfev=20000
+                )
+                CP_b, W_prime_b, Pmax_b, A_b, B_b = params_bias
+                P_pred = ompd_power_with_bias(df["t"].values.astype(float), *params_bias)
+                residuals = df["P"].values.astype(float) - P_pred
+                RMSE = np.sqrt(np.mean(residuals**2))
+                MAE = np.mean(np.abs(residuals))
+                bias_real = B_b
+
+                # Salva parametri per il calcolatore rapido
+                st.session_state["params_computed"] = {
+                    "CP_b": CP_b, "W_prime_b": W_prime_b, "Pmax_b": Pmax_b, "A_b": A_b, "B_b": B_b
+                }
+
+                st.success("Calcolo completato automaticamente dal CSV!")
 
     except Exception as e:
         st.error(f"Errore durante la lettura del CSV: {e}")
