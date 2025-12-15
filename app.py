@@ -36,7 +36,7 @@ def _format_time_label_custom(seconds):
 
 # =========================
 # Streamlit layout
-st.title("Bonvi omniPD model Web App")
+st.title("Bonvi omniPD model calculator")
 
 st.markdown(
     """
