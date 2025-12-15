@@ -218,7 +218,7 @@ if uploaded_file is not None:
 # =========================
 # Calcolatore rapido funzionante
 col_calc = st.columns([1])[0]
-t_str = col_calc.text_input("opzionale: inserisci t (in s) per sapere quanti watt riesci a fare", value="1200", key="t_calc_final")
+t_str = col_calc.text_input("(opzionale) Inserisci t (in s) per sapere quanti watt riesci a fare", value="1200", key="t_calc_final")
 try:
     t_calc = max(1, int(t_str))
 except Exception:
@@ -233,4 +233,4 @@ if "params_computed" in st.session_state:
     time_label = _format_time_label_custom(t_calc)
     col_calc.markdown(f"**{time_label} → {int(round(P_calc))} W**")
 else:
-    col_calc.markdown("per calcolare, scrollare e premere il 'Calcola' in alto'")
+    col_calc.markdown("⚠ Per calcolare, scrollare e premere il 'Calcola' in alto'")
