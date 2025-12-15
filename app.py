@@ -63,16 +63,16 @@ for i in range(num_rows):
         pass  # ignora input vuoti o non numerici
 
 # =========================
-# Calcolatore rapido compatto
+# Calcolatore rapido compatto, output sotto label
 # =========================
 
-col_label, col_input, col_output = st.columns([2, 1, 1])
+st.markdown("### Watt per tempo")  # Label in alto a sinistra
 
-# Label breve per stare sulla stessa riga
-col_label.markdown("**Watt per tempo**")
+# Creiamo una colonna singola per input e output allineati a sinistra
+col = st.columns([1])[0]
 
 # Input tempo
-t_str = col_input.text_input("", value="60", key="t_calc_text")
+t_str = col.text_input("Inserisci tempo (s)", value="60", key="t_calc_text")
 try:
     t_calc = max(1, int(t_str))  # forza tempo ≥ 1 s
 except:
@@ -85,10 +85,9 @@ if "params_computed" in st.session_state:
         t_calc,
         p["CP_b"], p["W_prime_b"], p["Pmax_b"], p["A_b"], p["B_b"]
     )
-    col_output.markdown(f"**{t_calc}s → {int(round(P_calc))} W**")
+    col.markdown(f"**{t_calc}s → {int(round(P_calc))} W**")
 else:
-    col_output.markdown(f"**{t_calc}s → W**")
-
+    col.markdown(f"**{t_calc}s → W**")
 
 # =========================
 # Pulsante Calcola
