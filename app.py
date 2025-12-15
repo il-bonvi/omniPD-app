@@ -37,7 +37,7 @@ def _format_time_label_custom(seconds):
 # =========================
 # Streamlit layout
 st.title("Bonvi omniPD Web App")
-st.write("Inserisci almeno 4 punti dati: tempo (s) e potenza (W)\nuno sprint (best is 5-10s))")
+st.write("Inserisci almeno 4 punti dati, tra cui sprint: tempo (s) e potenza (W))"
 
 # =========================
 # Input dati
@@ -49,8 +49,8 @@ power_values = []
 
 for i in range(num_rows):
     cols = st.columns(2)
-    t = cols[0].number_input(f"Time (s) #{i+1}", min_value=1, value=60, step=1, format="%d")
-    P = cols[1].number_input(f"Power (W) #{i+1}", min_value=1, value=300, step=1, format="%d")
+    t = cols[0].number_input(f"Time (s) #{i+1}", min_value=1, value=none, step=1, format="%d")
+    P = cols[1].number_input(f"Power (W) #{i+1}", min_value=1, value=none, step=1, format="%d")
     time_values.append(t)
     power_values.append(P)
 
