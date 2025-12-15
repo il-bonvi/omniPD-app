@@ -133,33 +133,40 @@ if st.button("Calcola"):
         durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]  # in secondi
         predicted_powers = [int(round(float(ompd_power(t, CP, W_prime, Pmax, A)))) for t in durations_s]
 
-# =========================
-# Mostra i 3 riquadri sopra i grafici in maniera uniforme
-col1, col2, col3 = st.columns(3)
+if st.button("Calcola"):
+    # ... calcolo parametri CP, W_prime, Pmax, A, ecc.
 
-with col1:
-    st.markdown("**Parametri stimati**")
-    st.markdown(f"CP: {int(round(CP))} W")
-    st.markdown(f"W': {int(round(W_prime))} J")
-    st.markdown(f"99% W'eff at {_format_time_label_custom(t_99)}")
-    st.markdown(f"Pmax: {int(round(Pmax))} W")
-    st.markdown(f"A: {A:.2f}")
+    # Calcolo valori teorici
+    durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]
+    predicted_powers = [int(round(float(ompd_power(t, CP, W_prime, Pmax, A)))) for t in durations_s]
 
-with col2:
-    st.markdown("**Residual summary**")
-    st.markdown(f"RMSE: {RMSE:.2f} W")
-    st.markdown(f"MAE: {MAE:.2f} W")
-    st.markdown(f"Bias: {bias_real:.2f} W")
+    # =========================
+    # Mostra i 3 riquadri sopra i grafici
+    col1, col2, col3 = st.columns(3)
 
-with col3:
-    st.markdown("**Valori teorici**")
-    for t, p in zip(durations_s, predicted_powers):
-        minutes = t // 60
-        st.markdown(f"{minutes}m: {p} W")
+    with col1:
+        st.markdown("**Parametri stimati**")
+        st.markdown(f"CP: {int(round(CP))} W")
+        st.markdown(f"W': {int(round(W_prime))} J")
+        st.markdown(f"99% W'eff at {_format_time_label_custom(t_99)}")
+        st.markdown(f"Pmax: {int(round(Pmax))} W")
+        st.markdown(f"A: {A:.2f}")
 
+    with col2:
+        st.markdown("**Residual summary**")
+        st.markdown(f"RMSE: {RMSE:.2f} W")
+        st.markdown(f"MAE: {MAE:.2f} W")
+        st.markdown(f"Bias: {bias_real:.2f} W")
 
-        # =========================
-        # Mostra grafici sotto i riquadri
-        st.plotly_chart(fig1)
-        st.plotly_chart(fig2)
-        st.plotly_chart(fig3)
+    with col3:
+        st.markdown("**Valori teorici**")
+        for t, p in zip(durations_s, predicted_powers):
+            minutes = t // 60
+            st.markdown(f"{minutes}m: {p} W")
+
+    # =========================
+    # Grafici
+    st.plotly_chart(fig1)
+    st.plotly_chart(fig2)
+    st.plotly_chart(fig3)
+
