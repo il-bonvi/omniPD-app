@@ -51,8 +51,7 @@ for i in range(num_rows):
     cols = st.columns(2)
     t_str = cols[0].text_input(f"Time (s) #{i+1}", value="", key=f"time_{i}")
     P_str = cols[1].text_input(f"Power (W) #{i+1}", value="", key=f"power_{i}")
-    
-    # converte solo se numerico e >0
+
     try:
         t_val = int(t_str)
         P_val = int(P_str)
@@ -71,12 +70,13 @@ if st.button("Calcola", key="calcola_btn"):
         df = pd.DataFrame({"t": time_values, "P": power_values})
 
         # Fit OmPD standard
-        initial_guess = [np.percentile(df["P"],30), 20000, df["P"].max(), 5]
-        params, _ = curve_fit(ompd_power, df["t"].values, df["P"].values, p0=initial_guess, maxfev=20000)
+        initial_guess = [np.percentile(df["P"], 30), 20000, df["P"].max(), 5]
+        params, _ = curve_fit(ompd_power, df["t"].values, df["P"].values,
+                              p0=initial_guess, maxfev=20000)
         CP, W_prime, Pmax, A = params
 
         # Fit OmPD con bias
-        initial_guess_bias = [np.percentile(df["P"],30),20000,df["P"].max(),5,0]
+        initial_guess_bias = [np.percentile(df["P"], 30), 20000, df["P"].max(), 5, 0]
         param_bounds = ([0,0,0,0,-100], [1000,50000,5000,100,100])
         params_bias, _ = curve_fit(ompd_power_with_bias,
                                    df["t"].values.astype(float),
@@ -100,15 +100,35 @@ if st.button("Calcola", key="calcola_btn"):
         w_99 = Weff_plot[t_99_idx]
 
         # =========================
+        # Calcolatore minimal prima dei grafici
+        st.subheader("Calcolatore rapido potenza")
+        t_calc = st.number_input("Inserisci durata (s)", min_value=1, value=0,
+                                 step=1, format="%d", key="t_calc_minimal")
+        if t_calc > 0:
+            P_calc = ompd_power_with_bias(t_calc, CP_b, W_prime_b, Pmax_b, A_b, B_b)
+            col_calc = st.columns([1, 2])
+            col_calc[0].write(f"{t_calc}s →")
+            col_calc[1].write(f"{int(round(P_calc))} W")
+        else:
+            col_calc = st.columns([1, 2])
+            col_calc[0].write("s →")
+            col_calc[1].write("W")
+
+        # =========================
         # Grafico OmPD
         T_plot = np.logspace(np.log10(1.0), np.log10(max(max(df["t"])*1.1, 180*60)), 500)
         fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(x=df["t"], y=df["P"], mode='markers', name="Dati reali", marker=dict(symbol='x', size=10)))
-        fig1.add_trace(go.Scatter(x=T_plot, y=ompd_power(T_plot,*params), mode='lines', name="OmPD"))
-        fig1.add_trace(go.Scatter(x=T_plot[T_plot<=TCPMAX], y=ompd_power_short(T_plot[T_plot<=TCPMAX], CP, W_prime, Pmax),
-                                  mode='lines', name="Curva base t ≤ TCPMAX", line=dict(dash='dash', color='blue')))
-        fig1.add_hline(y=CP, line=dict(color='red', dash='dash'), annotation_text="CP", annotation_position="top right")
-        fig1.add_vline(x=TCPMAX, line=dict(color='blue', dash='dot'), annotation_text="TCPMAX", annotation_position="bottom left")
+        fig1.add_trace(go.Scatter(x=df["t"], y=df["P"], mode='markers', name="Dati reali",
+                                  marker=dict(symbol='x', size=10)))
+        fig1.add_trace(go.Scatter(x=T_plot, y=ompd_power(T_plot, *params), mode='lines', name="OmPD"))
+        fig1.add_trace(go.Scatter(x=T_plot[T_plot<=TCPMAX],
+                                  y=ompd_power_short(T_plot[T_plot<=TCPMAX], CP, W_prime, Pmax),
+                                  mode='lines', name="Curva base t ≤ TCPMAX",
+                                  line=dict(dash='dash', color='blue')))
+        fig1.add_hline(y=CP, line=dict(color='red', dash='dash'),
+                       annotation_text="CP", annotation_position="top right")
+        fig1.add_vline(x=TCPMAX, line=dict(color='blue', dash='dot'),
+                       annotation_text="TCPMAX", annotation_position="bottom left")
         fig1.update_xaxes(type='log', title_text="Time (s)")
         fig1.update_yaxes(title_text="Power (W)")
         fig1.update_layout(title="OmPD Curve", hovermode="x unified", height=700)
@@ -116,7 +136,8 @@ if st.button("Calcola", key="calcola_btn"):
         # =========================
         # Grafico Residuals
         fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(x=df["t"], y=residuals, mode='lines+markers', name="Residuals", marker=dict(symbol='x', size=8), line=dict(color='red')))
+        fig2.add_trace(go.Scatter(x=df["t"], y=residuals, mode='lines+markers', name="Residuals",
+                                  marker=dict(symbol='x', size=8), line=dict(color='red')))
         fig2.add_hline(y=0, line=dict(color='black', dash='dash'))
         fig2.update_xaxes(type='log', title_text="Time (s)")
         fig2.update_yaxes(title_text="Residuals (W)")
@@ -125,10 +146,13 @@ if st.button("Calcola", key="calcola_btn"):
         # =========================
         # Grafico W'eff
         fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(x=T_plot_w, y=Weff_plot, mode='lines', name="W'eff", line=dict(color='green')))
+        fig3.add_trace(go.Scatter(x=T_plot_w, y=Weff_plot, mode='lines', name="W'eff",
+                                  line=dict(color='green')))
         fig3.add_hline(y=w_99, line=dict(color='blue', dash='dash'))
         fig3.add_vline(x=t_99, line=dict(color='blue', dash='dash'))
-        fig3.add_annotation(x=t_99, y=W_99, text=f"99% W'eff at {_format_time_label_custom(t_99)}", showarrow=True, arrowhead=2)
+        fig3.add_annotation(x=t_99, y=W_99,
+                            text=f"99% W'eff at {_format_time_label_custom(t_99)}",
+                            showarrow=True, arrowhead=2)
         fig3.update_xaxes(title_text="Time (s)")
         fig3.update_yaxes(title_text="W'eff (J)")
         fig3.update_layout(title="OmPD Effective W'", hovermode="x unified", height=700)
@@ -141,7 +165,6 @@ if st.button("Calcola", key="calcola_btn"):
         # =========================
         # Mostra riquadri sopra i grafici
         col1, col2, col3 = st.columns(3)
-
         with col1:
             st.markdown("**Parametri stimati**")
             st.markdown(f"CP: {int(round(CP))} W")
