@@ -179,7 +179,7 @@ if st.button("Calcola"):
         calcola_e_mostra(time_values, power_values)
 
 # =========================
-# File uploader CSV piccolo
+# File uploader CSV con filtro tempo massimo
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("### Oppure carica un CSV con i dati")
 st.markdown("""
@@ -199,20 +199,32 @@ if uploaded_file is not None:
     try:
         df_csv = pd.read_csv(uploaded_file)
         st.dataframe(df_csv.head(20), height=200)
+
         col_time = st.selectbox("Seleziona la colonna TEMPO", options=df_csv.columns)
         col_power = st.selectbox("Seleziona la colonna POTENZA", options=df_csv.columns)
 
+        # Inserimento filtro per tempo massimo
+        max_time = st.number_input(
+            "Valore massimo tempo (s) da importare",
+            min_value=1,
+            value=int(df_csv[col_time].max())
+        )
+
         if st.button("Importa dati CSV e calcola", key="csv_btn"):
+            # Pulizia e filtro dati
             df_valid = df_csv[[col_time, col_power]].dropna()
+            df_valid = df_valid[df_valid[col_time] <= max_time]
+
             time_values_csv = df_valid[col_time].astype(float).tolist()
             power_values_csv = df_valid[col_power].astype(float).tolist()
 
             st.session_state["time_values_csv"] = time_values_csv
             st.session_state["power_values_csv"] = power_values_csv
-            st.success(f"Dati importati: {len(time_values_csv)} punti")
+            st.success(f"Dati importati: {len(time_values_csv)} punti (tempo ≤ {max_time}s)")
 
             # Calcolo e visualizzazione immediata
             calcola_e_mostra(time_values_csv, power_values_csv)
+
     except Exception as e:
         st.error(f"Errore durante la lettura del CSV: {e}")
 
