@@ -66,7 +66,7 @@ for i in range(num_rows):
 # Calcolatore rapido compatto, output sotto label
 # =========================
 
-st.markdown("### Watt per tempo")  # Label in alto a sinistra
+st.markdown("Opzionale")  # Label in alto a sinistra
 
 # Creiamo una colonna singola per input e output allineati a sinistra
 col = st.columns([1])[0]
