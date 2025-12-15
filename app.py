@@ -41,9 +41,9 @@ st.title("Bonvi omniPD Web App")
 st.markdown(
     """
 Inserisci almeno 4 punti dati, tra cui sprint: tempo (s) e potenza (W).  
-Per valori di **A** inserisci **MMP oltre i 30 minuti**.
+Per avere valori di **A** inserisci **MMP oltre i 30 minuti**.
 
-📄 [Paper omniPD](INSERISCI_QUI_IL_LINK)
+📄 [Paper](https://pubmed.ncbi.nlm.nih.gov/32131692/)
 """
 )
 
