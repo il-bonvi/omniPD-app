@@ -66,11 +66,11 @@ for i in range(num_rows):
 # Calcolatore rapido prima del tasto Calcola
 st.markdown("### Calcolatore rapido")
 
-# Creiamo tre colonne: testo, input, output
+# Creiamo tre colonne
 col_label, col_input, col_output = st.columns([2, 1, 1])
 
-# Testo
-col_label.markdown("**Quanti watt faccio per questo tempo?**")
+# Testo (aggiungiamo <div style="margin-top:8px"> per centrare verticalmente)
+col_label.markdown('<div style="margin-top:8px"><b>Quanti watt faccio per questo tempo?</b></div>', unsafe_allow_html=True)
 
 # Input tempo (s)
 t_calc = col_input.number_input("", min_value=1, value=60, step=1, format="%d", key="t_calc_minimal")
