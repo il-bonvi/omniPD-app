@@ -51,11 +51,10 @@ st.markdown(
 Inserisci almeno **4 punti dati** (tra cui **sprint**) tempo (s) e potenza (W).  
 Oppure, più in basso ⬇️ puoi caricare un CSV con i dati.  
 Per avere valori di **A** inserisci **MMP oltre i 30 minuti** (opzionale).
-
-📄 [Paper](https://pubmed.ncbi.nlm.nih.gov/32131692/)
 """
-)   
+)
 
+# =========================
 # PDF locali
 pdf_files = ["Guida rapida_ come usare il calcolatore OmniPD.pdf",
              "tutorial CP-omniPD.pdf"]
@@ -85,7 +84,12 @@ for pdf_file, pdf_name in zip(pdf_files, pdf_names):
                 file_name=pdf_file,
                 mime="application/pdf"
             )
-            
+
+# =========================
+# Link al paper sotto i PDF
+st.markdown("📄 Paper:")
+st.markdown("[Apri il paper](https://pubmed.ncbi.nlm.nih.gov/32131692/)")
+
 # =========================
 # Input dati manuale
 num_rows = st.number_input("Numero di punti dati", min_value=4, max_value=20, value=4, step=1)
@@ -192,8 +196,6 @@ def calcola_e_mostra(time_values, power_values):
                  P_real = powers_csv[idx]
                  minutes = t // 60
                  st.markdown(f"{minutes}m: {int(round(P_real))} W")
-
-
 
     # =========================
     # Grafici
@@ -316,4 +318,3 @@ if "params_computed" in st.session_state:
         col_calc.markdown(f"Valore reale CSV: {int(round(P_real_csv))} W")
 else:
     col_calc.markdown("⚠ Per calcolare è necessario importare CSV O calcolare con i valori manuali")
-
