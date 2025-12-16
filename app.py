@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.optimize import curve_fit
 import streamlit as st
 import plotly.graph_objects as go
+import base64
 
 # =========================
 # Imposta la modalità wide
@@ -55,6 +56,36 @@ Per avere valori di **A** inserisci **MMP oltre i 30 minuti** (opzionale).
 """
 )   
 
+# PDF locali
+pdf_files = ["Guida rapida_ come usare il calcolatore OmniPD.pdf",
+             "tutorial CP-omniPD.pdf"]
+pdf_names = ["Guida rapida: come usare il calcolatore OmniPD",
+             "Tutorial CP-omniPD"]
+
+for pdf_file, pdf_name in zip(pdf_files, pdf_names):
+    with st.expander(f"{pdf_name} (clicca per visualizzare)"):
+        # Visualizza PDF embedded
+        with open(pdf_file, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+        pdf_display = f'''
+        <iframe
+            src="data:application/pdf;base64,{base64_pdf}"
+            width="100%"
+            height="600px"
+            type="application/pdf"
+        ></iframe>
+        '''
+        st.markdown(pdf_display, unsafe_allow_html=True)
+
+        # Bottone per scaricare PDF
+        with open(pdf_file, "rb") as f:
+            st.download_button(
+                label=f"Scarica {pdf_name}",
+                data=f.read(),
+                file_name=pdf_file,
+                mime="application/pdf"
+            )
+            
 # =========================
 # Input dati manuale
 num_rows = st.number_input("Numero di punti dati", min_value=4, max_value=20, value=4, step=1)
