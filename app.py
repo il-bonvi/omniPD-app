@@ -87,7 +87,11 @@ for pdf_file, pdf_name in zip(pdf_files, pdf_names):
 
 # =========================
 # Paper 
-st.markdown("[📄 Paper](https://pubmed.ncbi.nlm.nih.gov/32131692/)")
+st.markdown(
+    '<a href="https://pubmed.ncbi.nlm.nih.gov/32131692/" '
+    'target="_blank" style="text-decoration:none; color:#000;">📄 Paper</a>',
+    unsafe_allow_html=True
+)
 
 # =========================
 # Input dati manuale
