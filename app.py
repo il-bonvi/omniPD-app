@@ -225,9 +225,11 @@ def calcola_e_mostra(time_values, power_values):
     x_ticklabels = [sec_to_hms_simple(t) for t in x_ticks]
 
     # =========================
-    # Fig1: OmPD Curve con tooltip
+    # Fig1: OmPD Curve senza curva TCPMAX
     T_plot = np.logspace(np.log10(1.0), np.log10(max(max(df["t"])*1.1, 180*60)), 500)
     fig1 = go.Figure()
+
+    # Dati reali
     fig1.add_trace(go.Scatter(
         x=df["t"],
         y=df["P"],
@@ -237,6 +239,8 @@ def calcola_e_mostra(time_values, power_values):
         hovertemplate='Time: %{customdata}<br>Power: %{y:.0f} W<extra></extra>',
         customdata=[sec_to_hms_simple(t) for t in df["t"]]
     ))
+
+    # Curva OmPD
     fig1.add_trace(go.Scatter(
         x=T_plot,
         y=ompd_power(T_plot,*params),
@@ -245,18 +249,12 @@ def calcola_e_mostra(time_values, power_values):
         hovertemplate='Time: %{customdata}<br>Power: %{y:.0f} W<extra></extra>',
         customdata=[sec_to_hms_simple(t) for t in T_plot]
     ))
-    fig1.add_trace(go.Scatter(
-        x=T_plot[T_plot<=TCPMAX],
-        y=ompd_power_short(T_plot[T_plot<=TCPMAX], CP, W_prime, Pmax),
-        mode='lines',
-        name="Curva base t ≤ TCPMAX",
-        line=dict(dash='dash', color='blue'),
-        hovertemplate='Time: %{customdata}<br>Power: %{y:.0f} W<extra></extra>',
-        customdata=[sec_to_hms_simple(t) for t in T_plot[T_plot<=TCPMAX]]
-    ))
+
+    # Linee di riferimento CP e TCPMAX
     fig1.add_hline(y=CP, line=dict(color='red', dash='dash'), annotation_text="CP", annotation_position="top right")
     fig1.add_vline(x=TCPMAX, line=dict(color='blue', dash='dot'), annotation_text="TCPMAX", annotation_position="bottom left")
 
+    # Asse x logaritmico con tick leggibili
     fig1.update_xaxes(
         type='log',
         title_text="Time",
