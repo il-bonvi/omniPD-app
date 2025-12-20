@@ -285,7 +285,7 @@ def calcola_e_mostra(time_values, power_values):
         tickvals=x_ticks,
         ticktext=x_ticklabels
     )
-    fig2.update_yaxes(title_text="Residuals (W)")
+    fig2.update_yaxes(title_text="Residuals (W)", range=[-50, 50])
     fig2.update_layout(title="Residuals", hovermode="x unified", height=700, showlegend=False)
     st.plotly_chart(fig2)
 
