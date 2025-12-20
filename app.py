@@ -227,7 +227,8 @@ def calcola_e_mostra(time_values, power_values):
         autosize=True,
         margin=dict(l=60, r=60, t=60, b=60),
         hovermode="x unified",
-        height=650
+        height=650,
+        showlegend=False
     )
     st.plotly_chart(fig1, use_container_width=True)
 
