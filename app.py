@@ -204,44 +204,74 @@ def calcola_e_mostra(time_values, power_values):
 
     # =========================
     # Grafici
+    # =========================
     T_plot = np.logspace(np.log10(1.0), np.log10(max(max(df["t"])*1.1, 180*60)), 500)
+
+    # --- Fig1: OmPD Curve ---
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=df["t"], y=df["P"], mode='markers', name="Dati reali", marker=dict(symbol='x', size=10)))
+    fig1.add_trace(go.Scatter(x=df["t"], y=df["P"], mode='markers', name="Dati reali",
+                            marker=dict(symbol='x', size=10)))
     fig1.add_trace(go.Scatter(x=T_plot, y=ompd_power(T_plot,*params), mode='lines', name="OmPD"))
-    fig1.add_trace(go.Scatter(x=T_plot[T_plot<=TCPMAX], y=ompd_power_short(T_plot[T_plot<=TCPMAX], CP, W_prime, Pmax),
-                              mode='lines', name="Curva base t ≤ TCPMAX", line=dict(dash='dash', color='blue')))
-    fig1.add_hline(y=CP, line=dict(color='red', dash='dash'), annotation_text="CP", annotation_position="top right")
-    fig1.add_vline(x=TCPMAX, line=dict(color='blue', dash='dot'), annotation_text="TCPMAX", annotation_position="bottom left")
+    fig1.add_trace(go.Scatter(x=T_plot[T_plot<=TCPMAX],
+                            y=ompd_power_short(T_plot[T_plot<=TCPMAX], CP, W_prime, Pmax),
+                            mode='lines', name="Curva base t ≤ TCPMAX",
+                            line=dict(dash='dash', color='blue')))
+    fig1.add_hline(y=CP, line=dict(color='red', dash='dash'),
+                annotation_text="CP", annotation_position="top right")
+    fig1.add_vline(x=TCPMAX, line=dict(color='blue', dash='dot'),
+                annotation_text="TCPMAX", annotation_position="bottom left")
     fig1.update_xaxes(type='log', title_text="Time (s)")
     fig1.update_yaxes(title_text="Power (W)")
-    fig1.update_layout(title="OmPD Curve", hovermode="x unified", height=700)
-    st.plotly_chart(fig1)
+    fig1.update_layout(
+        title="OmPD Curve",
+        autosize=True,
+        margin=dict(l=60, r=60, t=60, b=60),
+        hovermode="x unified",
+        height=650
+    )
+    st.plotly_chart(fig1, use_container_width=True)
 
+    # --- Fig2: Residuals ---
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=df["t"], y=residuals, mode='lines+markers', name="Residuals",
-                              marker=dict(symbol='x', size=8), line=dict(color='red')))
+    fig2.add_trace(go.Scatter(x=df["t"], y=residuals, mode='lines+markers',
+                            name="Residuals", marker=dict(symbol='x', size=8),
+                            line=dict(color='red')))
     fig2.add_hline(y=0, line=dict(color='black', dash='dash'))
     fig2.update_xaxes(type='log', title_text="Time (s)")
     fig2.update_yaxes(title_text="Residuals (W)")
-    fig2.update_layout(title="Residuals", hovermode="x unified", height=700)
-    st.plotly_chart(fig2)
+    fig2.update_layout(
+        title="Residuals",
+        autosize=True,
+        margin=dict(l=60, r=60, t=60, b=60),
+        hovermode="x unified",
+        height=650
+    )
+    st.plotly_chart(fig2, use_container_width=True)
 
+    # --- Fig3: W'eff ---
     fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=T_plot_w, y=Weff_plot, mode='lines', name="W'eff", line=dict(color='green')))
+    fig3.add_trace(go.Scatter(x=T_plot_w, y=Weff_plot, mode='lines', name="W'eff",
+                            line=dict(color='green')))
     fig3.add_hline(y=w_99, line=dict(color='blue', dash='dash'))
     fig3.add_vline(x=t_99, line=dict(color='blue', dash='dash'))
     fig3.add_annotation(x=t_99, y=W_99, text=f"99% W'eff at {_format_time_label_custom(t_99)}",
                         showarrow=True, arrowhead=2)
     fig3.update_xaxes(title_text="Time (s)")
     fig3.update_yaxes(title_text="W'eff (J)")
-    fig3.update_layout(title="OmPD Effective W'", hovermode="x unified", height=700)
-    st.plotly_chart(fig3)
+    fig3.update_layout(
+        title="OmPD Effective W'",
+        autosize=True,
+        margin=dict(l=60, r=60, t=60, b=60),
+        hovermode="x unified",
+        height=650
+    )
+    st.plotly_chart(fig3, use_container_width=True)
 
-# =========================
-# Pulsante Calcola
-if st.button("Calcola"):
-    if len(time_values) >= 4:
-        calcola_e_mostra(time_values, power_values)
+    # =========================
+    # Pulsante Calcola
+    if st.button("Calcola"):
+        if len(time_values) >= 4:
+            calcola_e_mostra(time_values, power_values)
 
 # =========================
 # File uploader CSV con filtro tempo massimo
