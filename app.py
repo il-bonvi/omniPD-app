@@ -4,6 +4,10 @@ from scipy.optimize import curve_fit
 import streamlit as st
 import plotly.graph_objects as go
 import base64
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import numpy as np
+import streamlit as st
 
 # =========================
 # Imposta la modalità wide
@@ -203,70 +207,106 @@ def calcola_e_mostra(time_values, power_values):
                  st.markdown(f"{minutes}m: {int(round(P_real))} W")
 
     # =========================
-    # Grafici
+    # Funzioni helper per formattazione
+    def _format_time_label_custom(seconds):
+        h = int(seconds // 3600)
+        m = int((seconds % 3600) // 60)
+        s = int(seconds % 60)
+        if h > 0:
+            return f"{h}h{m:02d}m{s:02d}s"
+        elif m > 0:
+            return f"{m}m{s:02d}s"
+        else:
+            return f"{s}s"
+
+    def format_power(P):
+        return f"{int(round(P)):,} W"
+
+    def seconds_to_hms(x, pos):
+        # Funzione per formatter tick asse X log
+        return _format_time_label_custom(x)
+
     # =========================
-    T_plot = np.logspace(np.log10(1.0), np.log10(max(max(df["t"])*1.1, 180*60)), 500)
+    # Fig1: OmPD Curve
+    fig1, ax1 = plt.subplots(figsize=(10,6))
 
-    # --- Fig1: OmPD Curve ---
-    fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=df["t"], y=df["P"], mode='markers', name="Dati reali",
-                            marker=dict(symbol='x', size=10)))
-    fig1.add_trace(go.Scatter(x=T_plot, y=ompd_power(T_plot,*params), mode='lines', name="OmPD"))
-    fig1.add_trace(go.Scatter(x=T_plot[T_plot<=TCPMAX],
-                            y=ompd_power_short(T_plot[T_plot<=TCPMAX], CP, W_prime, Pmax),
-                            mode='lines', name="Curva base t ≤ TCPMAX",
-                            line=dict(dash='dash', color='blue')))
-    fig1.add_hline(y=CP, line=dict(color='red', dash='dash'),
-                annotation_text="CP", annotation_position="top right")
-    fig1.add_vline(x=TCPMAX, line=dict(color='blue', dash='dot'),
-                annotation_text="TCPMAX", annotation_position="bottom left")
-    fig1.update_xaxes(type='log', title_text="Time (s)")
-    fig1.update_yaxes(title_text="Power (W)")
-    fig1.update_layout(
-        title="OmPD Curve",
-        autosize=True,
-        margin=dict(l=60, r=60, t=60, b=60),
-        hovermode="x unified",
-        height=650,
-        showlegend=False
-    )
-    st.plotly_chart(fig1, use_container_width=True)
+    # Dati reali
+    ax1.plot(df["t"], df["P"], 'x', label="Dati misurati")
 
-    # --- Fig2: Residuals ---
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=df["t"], y=residuals, mode='lines+markers',
-                            name="Residuals", marker=dict(symbol='x', size=8),
-                            line=dict(color='red')))
-    fig2.add_hline(y=0, line=dict(color='black', dash='dash'))
-    fig2.update_xaxes(type='log', title_text="Time (s)")
-    fig2.update_yaxes(title_text="Residuals (W)")
-    fig2.update_layout(
-        title="Residuals",
-        autosize=True,
-        margin=dict(l=60, r=60, t=60, b=60),
-        hovermode="x unified",
-        height=650
-    )
-    st.plotly_chart(fig2, use_container_width=True)
+    # Curva OmPD stimata
+    T_plot = np.logspace(np.log10(1.0), np.log10(max(df["t"])*1.1), 500)
+    ax1.plot(T_plot, ompd_power(T_plot, CP, W_prime, Pmax, A), color='orange', label="OmPD stimata")
 
-    # --- Fig3: W'eff ---
-    fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(x=T_plot_w, y=Weff_plot, mode='lines', name="W'eff",
-                            line=dict(color='green')))
-    fig3.add_hline(y=w_99, line=dict(color='blue', dash='dash'))
-    fig3.add_vline(x=t_99, line=dict(color='blue', dash='dash'))
-    fig3.add_annotation(x=t_99, y=W_99, text=f"99% W'eff at {_format_time_label_custom(t_99)}",
-                        showarrow=True, arrowhead=2)
-    fig3.update_xaxes(title_text="Time (s)")
-    fig3.update_yaxes(title_text="W'eff (J)")
-    fig3.update_layout(
-        title="OmPD Effective W'",
-        autosize=True,
-        margin=dict(l=60, r=60, t=60, b=60),
-        hovermode="x unified",
-        height=650
-    )
-    st.plotly_chart(fig3, use_container_width=True)
+    # Curva base t <= TCPMAX
+    ax1.plot(T_plot[T_plot<=TCPMAX], ompd_power_short(T_plot[T_plot<=TCPMAX], CP, W_prime, Pmax),
+            color='blue', linestyle='--', label="Curva base t ≤ TCPMAX")
+
+    # Linea CP e annotazione
+    ax1.axhline(y=CP, color='red', linestyle='--')
+    ax1.annotate(f"CP → {format_power(CP)}",
+                xy=(T_plot[len(T_plot)//10], CP),
+                xytext=(0,5),
+                textcoords='offset points',
+                color='red', fontsize=10)
+
+    # Log scale e formatter asse X
+    ax1.set_xscale('log')
+    ax1.xaxis.set_major_formatter(mticker.FuncFormatter(seconds_to_hms))
+
+    ax1.set_xlabel("Time")
+    ax1.set_ylabel("Power (W)")
+    ax1.set_title("OmPD Curve")
+    ax1.legend()
+    ax1.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+    st.pyplot(fig1)
+
+    # =========================
+    # Fig2: Residuals
+    fig2, ax2 = plt.subplots(figsize=(10,6))
+    ax2.plot(df["t"], df["P"].values - ompd_power_with_bias(df["t"].values, CP_b, W_prime_b, Pmax_b, A_b, B_b),
+            'x-', color='red', label="Residuals")
+    ax2.axhline(0, color='black', linestyle='--')
+
+    ax2.set_xscale('log')
+    ax2.xaxis.set_major_formatter(mticker.FuncFormatter(seconds_to_hms))
+    ax2.set_xlabel("Time")
+    ax2.set_ylabel("Residuals (W)")
+    ax2.set_title("Residuals")
+    ax2.legend()
+    ax2.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+    st.pyplot(fig2)
+
+    # =========================
+    # Fig3: W'eff
+    fig3, ax3 = plt.subplots(figsize=(10,6))
+    T_plot_w = np.linspace(1, 3*60, 500)
+    Weff_plot = w_eff(T_plot_w, W_prime, CP, Pmax)
+    ax3.plot(T_plot_w, Weff_plot, color='green', label="W'eff")
+
+    # 99% W'eff e annotazione
+    W_99 = 0.99 * W_prime
+    t_99_idx = np.argmin(np.abs(Weff_plot - W_99))
+    t_99 = T_plot_w[t_99_idx]
+    w_99 = Weff_plot[t_99_idx]
+
+    ax3.axhline(y=w_99, color='blue', linestyle='--')
+    ax3.axvline(x=t_99, color='blue', linestyle='--')
+    ax3.annotate(f"99% W'eff at {_format_time_label_custom(t_99)} → {format_power(w_99)}",
+                xy=(t_99, w_99), xytext=(10,10), textcoords='offset points',
+                arrowprops=dict(arrowstyle='->', color='blue'),
+                fontsize=10, color='blue')
+
+    ax3.set_xscale('log')
+    ax3.xaxis.set_major_formatter(mticker.FuncFormatter(seconds_to_hms))
+    ax3.set_xlabel("Time")
+    ax3.set_ylabel("W'eff (J)")
+    ax3.set_title("OmPD Effective W'")
+    ax3.legend()
+    ax3.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+    st.pyplot(fig3)
 
     # =========================
     # Pulsante Calcola
