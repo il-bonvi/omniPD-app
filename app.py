@@ -125,12 +125,15 @@ def calcola_e_mostra(time_values, power_values):
     params, _ = curve_fit(ompd_power, df["t"].values, df["P"].values, p0=initial_guess, maxfev=20000)
     CP, W_prime, Pmax, A = params
 
-    # Calcola predizione e residui
-    P_pred = ompd_power(df["t"].values.astype(float), CP, W_prime, Pmax, A)
-    residuals = df["P"].values.astype(float) - P_pred
+    # Calcola predizione senza bias
+    P_pred_no_bias = ompd_power(df["t"].values.astype(float), CP, W_prime, Pmax, A)
+    # Calcola bias a posteriori
+    bias_real = np.mean(df["P"].values.astype(float) - P_pred_no_bias)
+    # Calcola residuals corretti con bias
+    residuals = df["P"].values.astype(float) - (P_pred_no_bias + bias_real)
+
     RMSE = np.sqrt(np.mean(residuals**2))
     MAE = np.mean(np.abs(residuals))
-    bias_real = np.mean(residuals)  # bias corretto a posteriori
 
     # Salva parametri
     st.session_state["params_computed"] = {
