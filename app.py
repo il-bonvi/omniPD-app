@@ -110,7 +110,7 @@ for i in range(num_rows):
 def calcola_e_mostra(time_values, power_values):
     df = pd.DataFrame({"t": time_values, "P": power_values})
 
-    # Fit OmPD standard (senza bias)
+    # Fit OmPD standard
     initial_guess = [np.percentile(df["P"], 30), 20000, df["P"].max(), 5]
     params, _ = curve_fit(ompd_power, df["t"].values, df["P"].values, p0=initial_guess, maxfev=20000)
     CP, W_prime, Pmax, A = params
@@ -122,11 +122,10 @@ def calcola_e_mostra(time_values, power_values):
     residuals = df["P"].values.astype(float) - P_pred
     RMSE = np.sqrt(np.mean(residuals**2))
     MAE = np.mean(np.abs(residuals))
-    bias_stat = np.mean(residuals)
 
     # Salva parametri
     st.session_state["params_computed"] = {
-        "CP_b": CP, "W_prime_b": W_prime, "Pmax_b": Pmax, "A_b": A, "B_b": bias_stat
+        "CP_b": CP, "W_prime_b": W_prime, "Pmax_b": Pmax, "A_b": A
     }
 
     # W'eff
@@ -160,7 +159,6 @@ def calcola_e_mostra(time_values, power_values):
         st.markdown("**Residual summary**")
         st.markdown(f"RMSE: {RMSE:.2f} W")
         st.markdown(f"MAE: {MAE:.2f} W")
-        st.markdown(f"Bias: {bias_stat:.2f} W")  # solo a scopo statistico
 
     with col3:
         st.markdown("**Valori teorici**")
