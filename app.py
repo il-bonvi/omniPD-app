@@ -29,12 +29,6 @@ def ompd_power_short(t, CP, W_prime, Pmax):
     t = np.array(t, dtype=float)
     return (W_prime / t) * (1 - np.exp(-t * (Pmax - CP) / W_prime)) + CP
 
-def ompd_power_with_bias(t, CP, W_prime, Pmax, A, B):
-    t = np.array(t, dtype=float)
-    base = (W_prime / t) * (1 - np.exp(-t * (Pmax - CP) / W_prime)) + CP
-    P = np.where(t <= TCPMAX, base, base - A * np.log(t / TCPMAX))
-    return P + B
-
 def w_eff(t, W_prime, CP, Pmax):
     return W_prime * (1 - np.exp(-t * (Pmax - CP) / W_prime))
 
@@ -45,7 +39,7 @@ def _format_time_label_custom(seconds):
 
 # =========================
 # Titolo e info
-st.title("Bonvi omniPD model calculator <3 v0.7")
+st.title("Bonvi omniPD model calculator <3 v0.7.1")
 st.markdown(
     """
 Inserisci almeno **4 punti dati** (tra cui **sprint**) tempo (s) e potenza (W).  
@@ -58,14 +52,11 @@ Per avere valori di **A** inserisci **MMP oltre i 30 minuti** (opzionale).
 
 # =========================
 # PDF locali
-pdf_files = ["tutorial_fast.pdf",
-             "guida_rapida_modello.pdf"]
-pdf_names = ["Tutorial fast: come usare il calcolatore",
-             "Guida al profilo di potenza omniPD"]
+pdf_files = ["tutorial_fast.pdf", "guida_rapida_modello.pdf"]
+pdf_names = ["Tutorial fast: come usare il calcolatore", "Guida al profilo di potenza omniPD"]
 
 for pdf_file, pdf_name in zip(pdf_files, pdf_names):
     with st.expander(f"{pdf_name} (clicca per visualizzare)"):
-        # Visualizza PDF embedded
         with open(pdf_file, "rb") as f:
             base64_pdf = base64.b64encode(f.read()).decode('utf-8')
         pdf_display = f'''
@@ -78,7 +69,6 @@ for pdf_file, pdf_name in zip(pdf_files, pdf_names):
         '''
         st.markdown(pdf_display, unsafe_allow_html=True)
 
-        # Bottone per scaricare PDF
         with open(pdf_file, "rb") as f:
             st.download_button(
                 label=f"Scarica {pdf_name}",
@@ -120,32 +110,23 @@ for i in range(num_rows):
 def calcola_e_mostra(time_values, power_values):
     df = pd.DataFrame({"t": time_values, "P": power_values})
 
-    # Fit OmPD standard
-    initial_guess = [np.percentile(df["P"],30), 20000, df["P"].max(), 5]
+    # Fit OmPD standard (senza bias)
+    initial_guess = [np.percentile(df["P"], 30), 20000, df["P"].max(), 5]
     params, _ = curve_fit(ompd_power, df["t"].values, df["P"].values, p0=initial_guess, maxfev=20000)
     CP, W_prime, Pmax, A = params
 
-    # Fit OmPD con bias
-    initial_guess_bias = [np.percentile(df["P"],30),20000,df["P"].max(),5,0]
-    param_bounds = ([0,0,0,0,-100], [1000,50000,5000,100,100])
-    params_bias, _ = curve_fit(
-        ompd_power_with_bias,
-        df["t"].values.astype(float),
-        df["P"].values.astype(float),
-        p0=initial_guess_bias,
-        bounds=param_bounds,
-        maxfev=20000
-    )
-    CP_b, W_prime_b, Pmax_b, A_b, B_b = params_bias
-    P_pred = ompd_power_with_bias(df["t"].values.astype(float), *params_bias)
+    # Predizione con parametri stimati
+    P_pred = ompd_power(df["t"].values.astype(float), CP, W_prime, Pmax, A)
+
+    # Residuals e statistiche (solo per visualizzazione)
     residuals = df["P"].values.astype(float) - P_pred
     RMSE = np.sqrt(np.mean(residuals**2))
     MAE = np.mean(np.abs(residuals))
-    bias_real = B_b
+    bias_stat = np.mean(residuals)
 
     # Salva parametri
     st.session_state["params_computed"] = {
-        "CP_b": CP_b, "W_prime_b": W_prime_b, "Pmax_b": Pmax_b, "A_b": A_b, "B_b": B_b
+        "CP_b": CP, "W_prime_b": W_prime, "Pmax_b": Pmax, "A_b": A, "B_b": bias_stat
     }
 
     # W'eff
@@ -154,7 +135,6 @@ def calcola_e_mostra(time_values, power_values):
     W_99 = 0.99 * W_prime
     t_99_idx = np.argmin(np.abs(Weff_plot - W_99))
     t_99 = T_plot_w[t_99_idx]
-    w_99 = Weff_plot[t_99_idx]
 
     # Valori teorici
     durations_s = [5*60, 10*60, 15*60, 20*60, 30*60]
@@ -180,7 +160,7 @@ def calcola_e_mostra(time_values, power_values):
         st.markdown("**Residual summary**")
         st.markdown(f"RMSE: {RMSE:.2f} W")
         st.markdown(f"MAE: {MAE:.2f} W")
-        st.markdown(f"Bias: {bias_real:.2f} W")
+        st.markdown(f"Bias: {bias_stat:.2f} W")  # solo a scopo statistico
 
     with col3:
         st.markdown("**Valori teorici**")
@@ -189,28 +169,24 @@ def calcola_e_mostra(time_values, power_values):
             st.markdown(f"{minutes}m: {p} W")
  
     if col4 is not None:
-         with col4:
-             st.markdown("**Valori reali per stesse durate**")
-             # Durate corrispondenti a quelle teoriche
-             match_durations = durations_s  # 5,10,15,20,30 minuti in secondi
-             # Per ciascuna durata, trova il valore reale dal CSV più vicino al tempo
-             times_csv = np.array(st.session_state["time_values_csv"])
-             powers_csv = np.array(st.session_state["power_values_csv"])
-             for t in match_durations:
-                 idx = np.argmin(np.abs(times_csv - t))
-                 P_real = powers_csv[idx]
-                 minutes = t // 60
-                 st.markdown(f"{minutes}m: {int(round(P_real))} W")
+        with col4:
+            st.markdown("**Valori reali per stesse durate**")
+            match_durations = durations_s
+            times_csv = np.array(st.session_state["time_values_csv"])
+            powers_csv = np.array(st.session_state["power_values_csv"])
+            for t in match_durations:
+                idx = np.argmin(np.abs(times_csv - t))
+                P_real = powers_csv[idx]
+                minutes = t // 60
+                st.markdown(f"{minutes}m: {int(round(P_real))} W")
 
     # =========================
     # Grafici
     # ========================
-    # Funzione per convertire secondi in formato semplificato
     def sec_to_hms_simple(seconds):
         h = int(seconds // 3600)
         m = int((seconds % 3600) // 60)
         s = int(seconds % 60)
-        
         if h > 0 and m == 0 and s == 0:
             return f"{h}h"
         elif m > 0 and s == 0:
@@ -220,16 +196,13 @@ def calcola_e_mostra(time_values, power_values):
         else:
             return f"{s}s"
 
-    # Tick logaritmici rotondi comuni
     x_ticks = [1,2,5,10,20,30,60,180,300,600,1200,1800,3600]
     x_ticklabels = [sec_to_hms_simple(t) for t in x_ticks]
 
     # =========================
-    # Fig1: OmPD Curve senza curva TCPMAX
+    # Fig1: OmPD Curve
     T_plot = np.logspace(np.log10(1.0), np.log10(max(max(df["t"])*1.1, 180*60)), 500)
     fig1 = go.Figure()
-
-    # Dati reali
     fig1.add_trace(go.Scatter(
         x=df["t"],
         y=df["P"],
@@ -239,8 +212,6 @@ def calcola_e_mostra(time_values, power_values):
         hovertemplate='Time: %{customdata}<br>Power: %{y:.0f} W<extra></extra>',
         customdata=[sec_to_hms_simple(t) for t in df["t"]]
     ))
-
-    # Curva OmPD
     fig1.add_trace(go.Scatter(
         x=T_plot,
         y=ompd_power(T_plot,*params),
@@ -249,25 +220,16 @@ def calcola_e_mostra(time_values, power_values):
         hovertemplate='Time: %{customdata}<br>Power: %{y:.0f} W<extra></extra>',
         customdata=[sec_to_hms_simple(t) for t in T_plot]
     ))
-
-    # Linee di riferimento CP e TCPMAX
     fig1.add_hline(y=CP, line=dict(color='red', dash='dash'), annotation_text="CP", annotation_position="top right")
     fig1.add_vline(x=TCPMAX, line=dict(color='blue', dash='dot'), annotation_text="TCPMAX", annotation_position="bottom left")
-
-    # Asse x logaritmico con tick leggibili
-    fig1.update_xaxes(
-        type='log',
-        title_text="Time",
-        tickvals=x_ticks,
-        ticktext=x_ticklabels
-    )
+    fig1.update_xaxes(type='log', title_text="Time", tickvals=x_ticks, ticktext=x_ticklabels)
     fig1.update_yaxes(title_text="Power (W)", range=[0, max(df["P"].max()*1.1, Pmax*1.1)])
     fig1.update_layout(title="OmPD Curve", hovermode="x unified", height=700, showlegend=False)
     st.plotly_chart(fig1)
 
     # =========================
-    # Fig2: Residuals con tooltip
-    residuals = df["P"].values.astype(float) - ompd_power_with_bias(df["t"].values.astype(float), *params_bias)
+    # Fig2: Residuals
+    residuals = df["P"].values.astype(float) - ompd_power(df["t"].values.astype(float), CP, W_prime, Pmax, A)
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
         x=df["t"],
@@ -279,24 +241,18 @@ def calcola_e_mostra(time_values, power_values):
         customdata=[sec_to_hms_simple(t) for t in df["t"]]
     ))
     fig2.add_hline(y=0, line=dict(color='black', dash='dash'))
-    fig2.update_xaxes(
-        type='log',
-        title_text="Time",
-        tickvals=x_ticks,
-        ticktext=x_ticklabels
-    )
+    fig2.update_xaxes(type='log', title_text="Time", tickvals=x_ticks, ticktext=x_ticklabels)
     fig2.update_yaxes(title_text="Residuals (W)", range=[-50, 50])
     fig2.update_layout(title="Residuals", hovermode="x unified", height=700, showlegend=False)
     st.plotly_chart(fig2)
 
     # =========================
-    # Fig3: W'eff con tooltip limitato a 5 minuti
+    # Fig3: W'eff
     T_plot_w = np.linspace(1, 3*60, 500)
     Weff_plot = w_eff(T_plot_w, W_prime, CP, Pmax)
     W_99 = 0.99 * W_prime
     t_99_idx = np.argmin(np.abs(Weff_plot - W_99))
     t_99 = T_plot_w[t_99_idx]
-    w_99 = Weff_plot[t_99_idx]
 
     fig3 = go.Figure()
     fig3.add_trace(go.Scatter(
@@ -307,11 +263,10 @@ def calcola_e_mostra(time_values, power_values):
         hovertemplate='Time: %{customdata}<br>W\'eff: %{y:.0f} J<extra></extra>',
         customdata=[sec_to_hms_simple(t) for t in T_plot_w]
     ))
-    fig3.add_hline(y=w_99, line=dict(color='blue', dash='dash'))
+    fig3.add_hline(y=W_99, line=dict(color='blue', dash='dash'))
     fig3.add_vline(x=t_99, line=dict(color='blue', dash='dash'))
     fig3.add_annotation(x=t_99, y=W_99, text=f"99% W'eff at {sec_to_hms_simple(t_99)}",
                         showarrow=True, arrowhead=2)
-
     fig3.update_xaxes(
         type='log',
         title_text="Time",
@@ -354,7 +309,6 @@ if uploaded_file is not None:
         col_time = st.selectbox("Seleziona la colonna TEMPO", options=df_csv.columns)
         col_power = st.selectbox("Seleziona la colonna POTENZA", options=df_csv.columns)
 
-        # Inserimento filtro per tempo massimo
         max_time = st.number_input(
             "(opzionale) Valore massimo di tempo (s) da importare. **⚠ sconsigliati valori inferiori a 1200-1800s ⚠**",
             min_value=1,
@@ -362,7 +316,6 @@ if uploaded_file is not None:
         )
 
         if st.button("Importa dati CSV e calcola", key="csv_btn"):
-            # Pulizia e filtro dati
             df_valid = df_csv[[col_time, col_power]].dropna()
             df_valid = df_valid[df_valid[col_time] <= max_time]
 
@@ -373,7 +326,6 @@ if uploaded_file is not None:
             st.session_state["power_values_csv"] = power_values_csv
             st.success(f"Dati importati: {len(time_values_csv)} punti (tempo ≤ {max_time}s)")
 
-            # Calcolo e visualizzazione immediata
             calcola_e_mostra(time_values_csv, power_values_csv)
 
     except Exception as e:
@@ -391,16 +343,13 @@ except Exception:
 
 if "params_computed" in st.session_state:
     p = st.session_state["params_computed"]
-    P_calc = ompd_power_with_bias(
+    P_calc = ompd_power(
         t_calc,
-        p["CP_b"], p["W_prime_b"], p["Pmax_b"], p["A_b"], p["B_b"]
+        p["CP_b"], p["W_prime_b"], p["Pmax_b"], p["A_b"]
     )
     time_label = _format_time_label_custom(t_calc)
-    
-    # Mostra valore calcolato
     col_calc.markdown(f"**{time_label} → {int(round(P_calc))} W** | (per aggiornare premere \"Enter\" dopo aver cambiato t)")
-    
-    # Se c'è CSV, mostra sotto il valore reale più vicino
+
     if "time_values_csv" in st.session_state and "power_values_csv" in st.session_state:
         times_csv = np.array(st.session_state["time_values_csv"])
         powers_csv = np.array(st.session_state["power_values_csv"])
