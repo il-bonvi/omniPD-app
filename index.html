@@ -368,15 +368,55 @@
             animation: fadeInUp 0.6s ease-out;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .custom-alert {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .custom-alert-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .custom-alert-content h3 {
+            color: var(--accent-secondary);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .custom-alert-content p {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .custom-alert-content button {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .custom-alert-content button:hover {
+            background: #3ba8cf;
+            transform: translateY(-1px);
         }
     </style>
 </head>
@@ -447,8 +487,19 @@
                 </div>
 
                 <div class="input-field" style="margin-bottom: 1rem;">
-                    <label for="maxTime">(opzionale) Valore massimo di tempo (s) da importare. ⚠ sconsigliati valori inferiori a 1200-1800s ⚠</label>
-                    <input type="number" id="maxTime" min="1" value="3600">
+                    <label for="sprintSeconds">Durata sprint (s)</label>
+                    <input type="number" id="sprintSeconds" min="1" max="120" value="10">
+                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Indica la durata (in secondi) per calcolare pMax (default 10s).</div>
+                </div>
+                <div class="input-field" style="margin-bottom: 1rem;">
+                    <label for="minPercentile">Percentile minimo residuo da includere (%)</label>
+                    <input type="number" id="minPercentile" min="0" max="100" value="70">
+                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Inserisci il percentile minimo (default 70). Verranno selezionati solo i punti per finestra con residual ≥ percentile selezionato.</div>
+                </div>
+                <div class="input-field" style="margin-bottom: 1rem;">
+                    <label for="valuesPerWindow">Numero massimo di punti per finestra</label>
+                    <input type="number" id="valuesPerWindow" min="1" max="10" value="1">
+                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Numero massimo di punti da selezionare per ogni finestra temporale (default e consigliato 1).</div>
                 </div>
 
                 <button onclick="importCSVData()">Importa dati CSV e calcola</button>
@@ -469,11 +520,30 @@
         </div>
     </div>
 
+    <!-- Custom Alert Dialog -->
+    <div id="customAlert" class="custom-alert">
+        <div class="custom-alert-content">
+            <h3>Attenzione</h3>
+            <p id="customAlertMessage"></p>
+            <button onclick="closeCustomAlert()">OK</button>
+        </div>
+    </div>
+
     <script>
         // Costanti
         const TCPMAX = 1800;
         let calculatedParams = null;
         let csvData = null;
+
+        // Funzione per dialog personalizzato
+        function showCustomAlert(message) {
+            document.getElementById('customAlertMessage').textContent = message;
+            document.getElementById('customAlert').style.display = 'flex';
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('customAlert').style.display = 'none';
+        }
 
         // Funzioni matematiche del modello
         function ompd_power(t, CP, W_prime, Pmax, A) {
@@ -603,7 +673,7 @@
             }
 
             if (timeValues.length < 4) {
-                alert('Inserisci almeno 4 punti dati validi!');
+                showCustomAlert('Inserisci almeno 4 punti dati validi!');
                 return;
             }
 
@@ -613,6 +683,13 @@
         function performCalculation(timeValues, powerValues) {
             // Fit del modello
             const params = curveFit(timeValues, powerValues);
+            
+            // Se non ci sono dati oltre 30 minuti (1800s), A = 0
+            const hasLongData = Math.max(...timeValues) > 1800;
+            if (!hasLongData) {
+                params[3] = 0;
+            }
+            
             const [CP, W_prime, Pmax, A] = params;
             
             calculatedParams = { CP, W_prime, Pmax, A };
@@ -697,18 +774,18 @@
             
             html += '</div>';
 
-            // Se ci sono dati CSV, mostra anche valori reali
+            // Se ci sono dati CSV, mostra i punti selezionati dal modello
             if (csvData) {
-                html += '<div class="stat-card"><h3>Valori reali per stesse durate</h3>';
-                durations.forEach(targetT => {
-                    const idx = csvData.timeValues.reduce((minIdx, t, i, arr) => 
-                        Math.abs(t - targetT) < Math.abs(arr[minIdx] - targetT) ? i : minIdx, 0);
-                    const P_real = Math.round(csvData.powerValues[idx]);
-                    const minutes = targetT / 60;
+                html += '<div class="stat-card"><h3>Punti filtrati</h3>';
+                // Ordina i punti per tempo crescente
+                const sortedIndices = csvData.timeValues.map((t, i) => i).sort((a, b) => csvData.timeValues[a] - csvData.timeValues[b]);
+                sortedIndices.forEach(idx => {
+                    const t = csvData.timeValues[idx];
+                    const p = Math.round(csvData.powerValues[idx]);
                     html += `
                         <div class="stat-item">
-                            <span class="stat-label">${minutes}m:</span>
-                            <span class="stat-value">${P_real} W</span>
+                            <span class="stat-label">${formatTimeLabel(t)}:</span>
+                            <span class="stat-value">${p} W</span>
                         </div>
                     `;
                 });
@@ -745,8 +822,9 @@
                         backgroundColor: '#47c3f0',
                         borderColor: '#47c3f0',
                         pointStyle: 'cross',
-                        pointRadius: 6,
-                        pointHoverRadius: 8,
+                            pointRadius: 6,
+                            pointHoverRadius: 16,
+                            pointHitRadius: 16,
                         showLine: false,
                         borderWidth: 2
                     }, {
@@ -809,6 +887,7 @@
                                 }
                             },
                             ticks: {
+                                stepSize: 100,
                                 color: '#a8b2c0',
                                 font: {
                                     family: 'Fira Code',
@@ -925,7 +1004,9 @@
                         backgroundColor: '#f06447',
                         borderColor: '#f06447',
                         pointStyle: 'cross',
-                        pointRadius: 5,
+                            pointRadius: 5,
+                            pointHoverRadius: 14,
+                            pointHitRadius: 14,
                         showLine: true,
                         borderWidth: 2,
                         tension: 0.1
@@ -1060,7 +1141,7 @@
             }
 
             // Chart 3: W'eff
-            const T_weff = Array.from({length: 500}, (_, i) => 1 + i * (180 - 1) / 499);
+            const T_weff = Array.from({length: 500}, (_, i) => 1 + i * (300 - 1) / 499);
             const Weff_plot = T_weff.map(t => w_eff(t, W_prime, CP, Pmax));
             const W_99 = 0.99 * W_prime;
             const t_99_idx = Weff_plot.reduce((minIdx, val, idx, arr) => 
@@ -1142,7 +1223,9 @@
                             },
                             grid: {
                                 color: '#2a3448'
-                            }
+                            },
+                            min: 0,
+                            max: Math.max(...Weff_plot) * 1.1
                         }
                     },
                     plugins: {
@@ -1291,38 +1374,142 @@
 
             const colTime = document.getElementById('colTime').value;
             const colPower = document.getElementById('colPower').value;
-            const maxTime = parseFloat(document.getElementById('maxTime').value);
+
+            if (colTime === colPower) {
+                showCustomAlert('Impossibile selezionare la stessa colonna per tempo e potenza!');
+                return;
+            }
 
             const timeIdx = window.csvRawData.headers.indexOf(colTime);
             const powerIdx = window.csvRawData.headers.indexOf(colPower);
 
-            const timeValues = [];
-            const powerValues = [];
-
+            // Leggo tutti i punti numerici validi (t>0, p>0)
+            const allTimes = [];
+            const allPowers = [];
             window.csvRawData.lines.forEach(line => {
                 const values = line.split(',');
                 const t = parseFloat(values[timeIdx]);
                 const p = parseFloat(values[powerIdx]);
-                
-                if (!isNaN(t) && !isNaN(p) && t <= maxTime && t > 0 && p > 0) {
-                    timeValues.push(t);
-                    powerValues.push(p);
+                if (!isNaN(t) && !isNaN(p) && t > 0 && p > 0) {
+                    allTimes.push(t);
+                    allPowers.push(p);
                 }
             });
 
-            if (timeValues.length < 4) {
-                alert('Non ci sono abbastanza dati validi nel CSV!');
+            if (allTimes.length < 4) {
+                showCustomAlert('Non ci sono abbastanza dati validi nel CSV!');
                 return;
             }
 
-            csvData = { timeValues, powerValues };
-            
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-success';
-            alertDiv.textContent = `Dati importati: ${timeValues.length} punti (tempo ≤ ${maxTime}s)`;
-            document.getElementById('csvControls').appendChild(alertDiv);
+            // Provo a fitare l'intera curva per calcolare i residuals
+            try {
+                const sprintSeconds = Math.max(1, parseFloat(document.getElementById('sprintSeconds').value) || 10);
+                const minPct = Math.max(0, Math.min(100, parseFloat(document.getElementById('minPercentile').value) || 70));
+                const valuesPerWindow = Math.max(1, parseInt(document.getElementById('valuesPerWindow').value) || 1);
 
-            performCalculation(timeValues, powerValues);
+                let selectedTimes = [];
+                let selectedPowers = [];
+                let selectedMask = new Array(allTimes.length).fill(false);
+
+                if (allTimes.length >= 4) {
+                    const params = curveFit(allTimes, allPowers);
+                    const predictions = allTimes.map((t) => ompd_power(t, ...params));
+                    const residuals = allPowers.map((p, i) => p - predictions[i]);
+
+                    // Calculate percentile threshold on ALL residuals
+                    const residualsClean = residuals.filter(r => !isNaN(r));
+                    let percentileThreshold = -Infinity;
+                    if (residualsClean.length > 0) {
+                        residualsClean.sort((a, b) => a - b);
+                        const rank = Math.ceil((minPct / 100) * residualsClean.length) - 1;
+                        const idx = Math.max(0, Math.min(residualsClean.length - 1, rank));
+                        percentileThreshold = residualsClean[idx];
+                        if (isNaN(percentileThreshold)) {
+                            percentileThreshold = Math.min(...residualsClean);
+                        }
+                    }
+
+                    // Define time windows: default Python windows
+                    const timeWindows = [
+                        [120, 240],
+                        [240, 480],
+                        [480, 900],
+                        [900, 1800],
+                        [1800, 2700]
+                    ];
+
+                    // For each window, select points
+                    for (const [tmin, tmax] of timeWindows) {
+                        const windowIndices = [];
+                        for (let i = 0; i < allTimes.length; i++) {
+                            if (allTimes[i] >= tmin && allTimes[i] <= tmax) {
+                                windowIndices.push(i);
+                            }
+                        }
+                        if (windowIndices.length === 0) continue;
+
+                        // Sort window indices by residual descending (highest first)
+                        const sortedIndices = windowIndices.sort((a, b) => residuals[b] - residuals[a]);
+
+                        // Take up to valuesPerWindow where residual >= threshold
+                        let count = 0;
+                        for (const i of sortedIndices) {
+                            if (!isNaN(residuals[i]) && residuals[i] >= percentileThreshold && !selectedMask[i]) {
+                                selectedTimes.push(allTimes[i]);
+                                selectedPowers.push(allPowers[i]);
+                                selectedMask[i] = true;
+                                count++;
+                                if (count >= valuesPerWindow) break;
+                            }
+                        }
+                    }
+
+                    // Sprint selection: add the closest sprint point if not already selected
+                    if (sprintSeconds > 0) {
+                        let minDist = Infinity;
+                        let sprintIdx = -1;
+                        for (let i = 0; i < allTimes.length; i++) {
+                            const dist = Math.abs(allTimes[i] - sprintSeconds);
+                            if (dist < minDist) {
+                                minDist = dist;
+                                sprintIdx = i;
+                            }
+                        }
+                        if (sprintIdx >= 0 && !selectedMask[sprintIdx] && !isNaN(allTimes[sprintIdx]) && !isNaN(allPowers[sprintIdx])) {
+                            selectedTimes.push(allTimes[sprintIdx]);
+                            selectedPowers.push(allPowers[sprintIdx]);
+                            selectedMask[sprintIdx] = true;
+                        }
+                    }
+                }
+
+                // If less than 4 points selected, fallback to all data
+                if (selectedTimes.length < 4) {
+                    selectedTimes = [...allTimes];
+                    selectedPowers = [...allPowers];
+                }
+
+                // Sort selected data by time for proper plotting
+                const sortedIndices = selectedTimes.map((_, i) => i).sort((a, b) => selectedTimes[a] - selectedTimes[b]);
+                selectedTimes = sortedIndices.map(i => selectedTimes[i]);
+                selectedPowers = sortedIndices.map(i => selectedPowers[i]);
+
+                csvData = { timeValues: selectedTimes, powerValues: selectedPowers };
+
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success';
+                alertDiv.textContent = `Dati importati: ${allTimes.length} punti totali, selezionati ${selectedTimes.length} punti`;
+                document.getElementById('csvControls').appendChild(alertDiv);
+
+                performCalculation(selectedTimes, selectedPowers);
+                // Scroll automatico alla tabella dei risultati
+                setTimeout(function() {
+                    document.getElementById('resultsSection').scrollIntoView({behavior: 'smooth', block: 'start'});
+                }, 200);
+            } catch (e) {
+                console.error('Errore importCSVData:', e);
+                showCustomAlert('Errore durante il processamento del CSV. Controlla il formato e riprova.');
+            }
         }
 
         // Quick calculator
@@ -1339,13 +1526,6 @@
             
             let html = `<div class="quick-calc-result">${formatTimeLabel(t)} → ${Math.round(P_calc)} W</div>`;
             html += '<p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">(per aggiornare premere "Enter" dopo aver cambiato t)</p>';
-
-            if (csvData) {
-                const idx = csvData.timeValues.reduce((minIdx, time, i, arr) => 
-                    Math.abs(time - t) < Math.abs(arr[minIdx] - t) ? i : minIdx, 0);
-                const P_real = Math.round(csvData.powerValues[idx]);
-                html += `<p style="margin-top: 1rem; color: var(--accent-secondary);">Valore reale CSV: ${P_real} W</p>`;
-            }
 
             document.getElementById('quickResult').innerHTML = html;
         }
