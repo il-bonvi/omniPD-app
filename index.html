@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bonvi omniPD model calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Crimson+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #131825;
+            --bg-tertiary: #1a2035;
+            --accent-primary: #47c3f0;
+            --accent-secondary: #f06447;
+            --text-primary: #e8edf4;
+            --text-secondary: #a8b2c0;
+            --border-color: #2a3448;
+            --success: #52c787;
+            --warning: #f0a047;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(71, 195, 240, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(240, 100, 71, 0.05) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .version {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .info-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-primary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .info-box p {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .section:hover {
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+
+        .section h2 {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-primary);
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-family: 'Fira Code', monospace;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: 'Fira Code', monospace;
+            transition: all 0.2s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(71, 195, 240, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--accent-primary), #3ba8cf);
+            color: var(--bg-primary);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Crimson Pro', serif;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(71, 195, 240, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .stat-card h3 {
+            color: var(--accent-secondary);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .chart-container {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem 1.25rem 2.5rem 1.25rem; /* più spazio sotto per le etichette */
+            margin-top: 2rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+            position: relative;
+            height: 600px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .chart-full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-container h3 {
+            color: var(--accent-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .chart-container canvas {
+            flex: 1;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            display: block;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .chart-full-width {
+                grid-column: auto;
+            }
+        }
+
+
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(71, 195, 240, 0.3);
+            border-radius: 50%;
+            border-top-color: #47c3f0;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .alert-success {
+            background: rgba(82, 199, 135, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(240, 160, 71, 0.1);
+            border: 1px solid var(--warning);
+            color: var(--warning);
+        }
+
+        #numRowsInput {
+            width: 100px;
+        }
+
+        .quick-calc {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent-primary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .quick-calc-result {
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+            font-weight: 700;
+            margin-top: 1rem;
+            font-family: 'Fira Code', monospace;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 3rem 0;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        #resultsSection {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bonvi omniPD model calculator ❤️</h1>
+        <div class="version">v0.7.1</div>
+
+        <div class="info-box">
+            <p>Inserisci almeno <strong>4 punti dati</strong> (tra cui <strong>sprint</strong>) tempo (s) e potenza (W).</p>
+            <p>Oppure, più in basso ⬇️ puoi caricare un CSV con i dati.</p>
+            <p>Per avere valori di <strong>A</strong> inserisci <strong>MMP oltre i 30 minuti</strong> (opzionale).</p>
+        </div>
+
+        <div class="section">
+            <h2>Inserimento Dati Manuale</h2>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="numRowsInput">Numero di punti dati</label>
+                <input type="number" id="numRowsInput" min="4" max="20" value="4" onchange="createInputRows()">
+            </div>
+
+            <div id="inputContainer"></div>
+
+            <button onclick="calculate()">Calcola</button>
+        </div>
+
+        <div id="resultsSection" style="display: none;">
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <div class="charts-grid" style="grid-template-columns: 1fr; gap: 2rem;">
+                <div class="chart-container chart-full-width" style="margin-bottom: 2rem;">
+                    <h3>OmPD Power-Duration Curve</h3>
+                    <canvas id="chart1"></canvas>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="chart-container">
+                        <h3>Model Residuals</h3>
+                        <canvas id="chart2"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Effective W' Recovery</h3>
+                        <canvas id="chart3"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h2>Oppure carica un CSV con i dati</h2>
+            
+            <div class="file-upload" onclick="document.getElementById('csvFile').click()">
+                <input type="file" id="csvFile" accept=".csv" onchange="handleFileUpload(event)">
+                <p>📁 Clicca per caricare un file CSV</p>
+            </div>
+
+            <div id="csvControls" style="display: none;">
+                <div class="input-field" style="margin-bottom: 1rem;">
+                    <label for="colTime">Seleziona la colonna TEMPO</label>
+                    <select id="colTime"></select>
+                </div>
+
+                <div class="input-field" style="margin-bottom: 1rem;">
+                    <label for="colPower">Seleziona la colonna POTENZA</label>
+                    <select id="colPower"></select>
+                </div>
+
+                <div class="input-field" style="margin-bottom: 1rem;">
+                    <label for="maxTime">(opzionale) Valore massimo di tempo (s) da importare. ⚠ sconsigliati valori inferiori a 1200-1800s ⚠</label>
+                    <input type="number" id="maxTime" min="1" value="3600">
+                </div>
+
+                <button onclick="importCSVData()">Importa dati CSV e calcola</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h2>Calcolatore Rapido</h2>
+            <div class="quick-calc">
+                <div class="input-field">
+                    <label for="tCalc">(opzionale) Inserisci t (in s) per sapere quanti watt riesci a fare</label>
+                    <input type="number" id="tCalc" value="1200" min="1" onchange="quickCalculate()">
+                </div>
+                <div id="quickResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Costanti
+        const TCPMAX = 1800;
+        let calculatedParams = null;
+        let csvData = null;
+
+        // Funzioni matematiche del modello
+        function ompd_power(t, CP, W_prime, Pmax, A) {
+            const base = (W_prime / t) * (1 - Math.exp(-t * (Pmax - CP) / W_prime)) + CP;
+            return t <= TCPMAX ? base : base - A * Math.log(t / TCPMAX);
+        }
+
+        function w_eff(t, W_prime, CP, Pmax) {
+            return W_prime * (1 - Math.exp(-t * (Pmax - CP) / W_prime));
+        }
+
+        function formatTimeLabel(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const hours = Math.floor(seconds / 3600);
+            
+            if (hours > 0 && minutes % 60 === 0 && secs === 0) {
+                return `${hours}h`;
+            } else if (minutes > 0 && secs === 0) {
+                return `${minutes}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
+        }
+
+        // Curve fitting semplificato (Nelder-Mead)
+        function curveFit(timeValues, powerValues) {
+            // Stima iniziale
+            const sortedPower = [...powerValues].sort((a, b) => a - b);
+            const CP_init = sortedPower[Math.floor(sortedPower.length * 0.3)];
+            const W_prime_init = 20000;
+            const Pmax_init = Math.max(...powerValues);
+            const A_init = 5;
+
+            let params = [CP_init, W_prime_init, Pmax_init, A_init];
+            
+            // Ottimizzazione semplificata
+            const maxIter = 1000;
+            let step = [10, 1000, 10, 0.5];
+            
+            for (let iter = 0; iter < maxIter; iter++) {
+                const currentError = calculateError(params, timeValues, powerValues);
+                let improved = false;
+
+                for (let i = 0; i < params.length; i++) {
+                    const testParams = [...params];
+                    testParams[i] += step[i];
+                    const testError = calculateError(testParams, timeValues, powerValues);
+                    
+                    if (testError < currentError) {
+                        params = testParams;
+                        improved = true;
+                    } else {
+                        testParams[i] = params[i] - step[i];
+                        const testError2 = calculateError(testParams, timeValues, powerValues);
+                        if (testError2 < currentError) {
+                            params = testParams;
+                            improved = true;
+                        }
+                    }
+                }
+
+                if (!improved) {
+                    step = step.map(s => s * 0.9);
+                }
+                
+                if (step.every(s => Math.abs(s) < 0.01)) break;
+            }
+
+            return params;
+        }
+
+        function calculateError(params, timeValues, powerValues) {
+            let sumSquaredError = 0;
+            for (let i = 0; i < timeValues.length; i++) {
+                const predicted = ompd_power(timeValues[i], ...params);
+                const error = powerValues[i] - predicted;
+                sumSquaredError += error * error;
+            }
+            return sumSquaredError;
+        }
+
+        // Creazione righe input
+        function createInputRows() {
+            const numRows = parseInt(document.getElementById('numRowsInput').value);
+            const container = document.getElementById('inputContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < numRows; i++) {
+                const label = i === 0 ? 'Sprint (1–10s)' : `#${i}`;
+                const div = document.createElement('div');
+                div.className = 'input-group';
+                div.innerHTML = `
+                    <div class="input-field">
+                        <label>${label} – Time (s)</label>
+                        <input type="text" id="time_${i}" placeholder="es. ${i === 0 ? '5' : '300'}">
+                    </div>
+                    <div class="input-field">
+                        <label>${label} – Power (W)</label>
+                        <input type="text" id="power_${i}" placeholder="es. ${i === 0 ? '1000' : '300'}">
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        // Calcolo principale
+        function calculate() {
+            const numRows = parseInt(document.getElementById('numRowsInput').value);
+            const timeValues = [];
+            const powerValues = [];
+
+            for (let i = 0; i < numRows; i++) {
+                const timeInput = document.getElementById(`time_${i}`).value;
+                const powerInput = document.getElementById(`power_${i}`).value;
+                
+                if (timeInput && powerInput) {
+                    const t = parseFloat(timeInput);
+                    const p = parseFloat(powerInput);
+                    if (t > 0 && p > 0) {
+                        timeValues.push(t);
+                        powerValues.push(p);
+                    }
+                }
+            }
+
+            if (timeValues.length < 4) {
+                alert('Inserisci almeno 4 punti dati validi!');
+                return;
+            }
+
+            performCalculation(timeValues, powerValues);
+        }
+
+        function performCalculation(timeValues, powerValues) {
+            // Fit del modello
+            const params = curveFit(timeValues, powerValues);
+            const [CP, W_prime, Pmax, A] = params;
+            
+            calculatedParams = { CP, W_prime, Pmax, A };
+
+            // Calcolo predizioni e residui
+            const predictions = timeValues.map(t => ompd_power(t, CP, W_prime, Pmax, A));
+            const residuals = powerValues.map((p, i) => p - predictions[i]);
+            const RMSE = Math.sqrt(residuals.reduce((sum, r) => sum + r * r, 0) / residuals.length);
+            const MAE = residuals.reduce((sum, r) => sum + Math.abs(r), 0) / residuals.length;
+
+            // W'eff
+            const t_99_range = Array.from({length: 500}, (_, i) => 1 + i * (180 - 1) / 499);
+            const weff_vals = t_99_range.map(t => w_eff(t, W_prime, CP, Pmax));
+            const W_99 = 0.99 * W_prime;
+            const t_99_idx = weff_vals.reduce((minIdx, val, idx, arr) => 
+                Math.abs(val - W_99) < Math.abs(arr[minIdx] - W_99) ? idx : minIdx, 0);
+            const t_99 = t_99_range[t_99_idx];
+
+            // Valori teorici
+            const durations = [300, 600, 900, 1200, 1800];
+            const predictedPowers = durations.map(t => Math.round(ompd_power(t, CP, W_prime, Pmax, A)));
+
+            // Mostra risultati
+            displayResults(CP, W_prime, Pmax, A, RMSE, MAE, t_99, durations, predictedPowers);
+            createCharts(timeValues, powerValues, params, residuals);
+            
+            document.getElementById('resultsSection').style.display = 'block';
+            quickCalculate();
+        }
+
+        function displayResults(CP, W_prime, Pmax, A, RMSE, MAE, t_99, durations, predictedPowers) {
+            let html = `
+                <div class="stat-card">
+                    <h3>Parametri stimati</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">CP:</span>
+                        <span class="stat-value">${Math.round(CP)} W</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">W':</span>
+                        <span class="stat-value">${Math.round(W_prime)} J</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">99% W'eff at:</span>
+                        <span class="stat-value">${formatTimeLabel(t_99)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Pmax:</span>
+                        <span class="stat-value">${Math.round(Pmax)} W</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">A:</span>
+                        <span class="stat-value">${A.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Residual summary</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">RMSE:</span>
+                        <span class="stat-value">${RMSE.toFixed(2)} W</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">MAE:</span>
+                        <span class="stat-value">${MAE.toFixed(2)} W</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Valori teorici</h3>
+            `;
+            
+            durations.forEach((t, i) => {
+                const minutes = t / 60;
+                html += `
+                    <div class="stat-item">
+                        <span class="stat-label">${minutes}m:</span>
+                        <span class="stat-value">${predictedPowers[i]} W</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+
+            // Se ci sono dati CSV, mostra anche valori reali
+            if (csvData) {
+                html += '<div class="stat-card"><h3>Valori reali per stesse durate</h3>';
+                durations.forEach(targetT => {
+                    const idx = csvData.timeValues.reduce((minIdx, t, i, arr) => 
+                        Math.abs(t - targetT) < Math.abs(arr[minIdx] - targetT) ? i : minIdx, 0);
+                    const P_real = Math.round(csvData.powerValues[idx]);
+                    const minutes = targetT / 60;
+                    html += `
+                        <div class="stat-item">
+                            <span class="stat-label">${minutes}m:</span>
+                            <span class="stat-value">${P_real} W</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            document.getElementById('statsGrid').innerHTML = html;
+        }
+
+        function createCharts(timeValues, powerValues, params, residuals) {
+            const [CP, W_prime, Pmax, A] = params;
+
+            // Register plugins
+            // Chart.register(annotationPlugin);
+
+            // Destroy existing charts if they exist
+            if (window.chart1 && typeof window.chart1.destroy === 'function') window.chart1.destroy();
+            if (window.chart2 && typeof window.chart2.destroy === 'function') window.chart2.destroy();
+            if (window.chart3 && typeof window.chart3.destroy === 'function') window.chart3.destroy();
+
+            // Chart 1: OmPD Curve
+            const maxTime = Math.max(...timeValues, 10800);
+            const T_plot = logspace(1, maxTime, 500);
+            const P_plot = T_plot.map(t => ompd_power(t, CP, W_prime, Pmax, A));
+
+            const ctx1 = document.getElementById('chart1').getContext('2d');
+            try {
+                window.chart1 = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Real Data',
+                        data: timeValues.map((t, i) => ({x: t, y: powerValues[i]})),
+                        backgroundColor: '#47c3f0',
+                        borderColor: '#47c3f0',
+                        pointStyle: 'cross',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        showLine: false,
+                        borderWidth: 2
+                    }, {
+                        label: 'OmPD Model',
+                        data: T_plot.map((t, i) => ({x: t, y: P_plot[i]})),
+                        backgroundColor: 'transparent',
+                        borderColor: '#f06447',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'logarithmic',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'Time (s)',
+                                color: '#e8edf4',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 14,
+                                    weight: '600'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    // Solo alcuni valori specifici per evitare sovrapposizione
+                                    const logVal = Math.log10(value);
+                                    if (Math.abs(logVal - Math.round(logVal)) < 0.1) {
+                                        return formatTimeLabel(value);
+                                    }
+                                    return '';
+                                },
+                                color: '#a8b2c0',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 12
+                                },
+                                maxTicksLimit: 8
+                            },
+                            grid: {
+                                color: '#2a3448'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Power (W)',
+                                color: '#e8edf4',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 14,
+                                    weight: '600'
+                                }
+                            },
+                            ticks: {
+                                color: '#a8b2c0',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: '#2a3448'
+                            },
+                            min: 0,
+                            max: Math.max(...powerValues, Pmax) * 1.1
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e8edf4',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 12
+                                },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(26, 32, 53, 0.95)',
+                            titleColor: '#e8edf4',
+                            bodyColor: '#a8b2c0',
+                            borderColor: '#2a3448',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: function(context) {
+                                    if (context[0] && context[0].parsed && context[0].parsed.x) {
+                                        return `Time: ${formatTimeLabel(context[0].parsed.x)}`;
+                                    }
+                                    return '';
+                                },
+                                label: function(context) {
+                                    let label = '';
+                                    if (context.dataset.label) {
+                                        label += context.dataset.label + ': ';
+                                    }
+                                    if (typeof context.parsed.y === 'number') {
+                                        label += Math.round(context.parsed.y) + ' W';
+                                    }
+                                    return label;
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Fira Code',
+                                size: 18,
+                                weight: '600'
+                            },
+                            titleFont: {
+                                family: 'Fira Code',
+                                size: 18,
+                                weight: '700'
+                            },
+                            padding: 16
+                        }
+                    },
+                    elements: {
+                        point: {
+                            hoverBorderWidth: 3
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'horizontalLine',
+                    afterDraw: (chart) => {
+                        try {
+                            const {ctx, chartArea: {left, right, top, bottom}, scales: {x, y}} = chart;
+                            if (!y || typeof y.getPixelForValue !== 'function') return;
+                            
+                            const cpY = y.getPixelForValue(CP);
+                            
+                            ctx.save();
+                            ctx.strokeStyle = '#f06447';
+                            ctx.lineWidth = 2;
+                            ctx.setLineDash([5, 5]);
+                            ctx.beginPath();
+                            ctx.moveTo(left, cpY);
+                            ctx.lineTo(right, cpY);
+                            ctx.stroke();
+                            
+                            // CP label
+                            ctx.fillStyle = '#f06447';
+                            ctx.font = '12px Fira Code';
+                            ctx.textAlign = 'right';
+                            ctx.fillText('CP', right - 10, cpY - 5);
+                            ctx.restore();
+                        } catch (e) {
+                            console.warn('Error drawing horizontal line:', e);
+                        }
+                    }
+                }]
+            });
+            } catch (error) {
+                console.error('Error creating chart1:', error);
+                window.chart1 = null;
+            }
+
+            // Chart 2: Residuals
+            const ctx2 = document.getElementById('chart2').getContext('2d');
+            try {
+                window.chart2 = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Residuals',
+                        data: timeValues.map((t, i) => ({x: t, y: residuals[i]})),
+                        backgroundColor: '#f06447',
+                        borderColor: '#f06447',
+                        pointStyle: 'cross',
+                        pointRadius: 5,
+                        showLine: true,
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'logarithmic',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'Time (s)',
+                                color: '#e8edf4',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 14,
+                                    weight: '600'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    // Solo alcuni valori specifici per evitare sovrapposizione
+                                    const logVal = Math.log10(value);
+                                    if (Math.abs(logVal - Math.round(logVal)) < 0.1) {
+                                        return formatTimeLabel(value);
+                                    }
+                                    return '';
+                                },
+                                color: '#a8b2c0',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 12
+                                },
+                                maxTicksLimit: 8
+                            },
+                            grid: {
+                                color: '#2a3448'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Residuals (W)',
+                                color: '#e8edf4',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 14,
+                                    weight: '600'
+                                }
+                            },
+                            ticks: {
+                                color: '#a8b2c0',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: '#2a3448'
+                            },
+                            min: -50,
+                            max: 50
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'nearest',
+                            intersect: false,
+                            backgroundColor: 'rgba(26, 32, 53, 0.95)',
+                            titleColor: '#e8edf4',
+                            bodyColor: '#a8b2c0',
+                            borderColor: '#2a3448',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: function(context) {
+                                    if (context[0] && context[0].parsed && context[0].parsed.x) {
+                                        return `Time: ${formatTimeLabel(context[0].parsed.x)}`;
+                                    }
+                                    return '';
+                                },
+                                label: function(context) {
+                                    return `Residual: ${typeof context.parsed.y === 'number' ? Math.round(context.parsed.y) : ''} W`;
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Fira Code',
+                                size: 18,
+                                weight: '600'
+                            },
+                            titleFont: {
+                                family: 'Fira Code',
+                                size: 18,
+                                weight: '700'
+                            },
+                            padding: 16
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'zeroLine',
+                    afterDraw: (chart) => {
+                        try {
+                            const {ctx, chartArea: {left, right}, scales: {y}} = chart;
+                            if (!y || typeof y.getPixelForValue !== 'function') return;
+                            
+                            const zeroY = y.getPixelForValue(0);
+                            
+                            ctx.save();
+                            ctx.strokeStyle = '#a8b2c0';
+                            ctx.lineWidth = 1;
+                            ctx.setLineDash([3, 3]);
+                            ctx.beginPath();
+                            ctx.moveTo(left, zeroY);
+                            ctx.lineTo(right, zeroY);
+                            ctx.stroke();
+                            ctx.restore();
+                        } catch (e) {
+                            console.warn('Error drawing zero line:', e);
+                        }
+                    }
+                }]
+            });
+            } catch (error) {
+                console.error('Error creating chart2:', error);
+                window.chart2 = null;
+            }
+
+            // Chart 3: W'eff
+            const T_weff = Array.from({length: 500}, (_, i) => 1 + i * (180 - 1) / 499);
+            const Weff_plot = T_weff.map(t => w_eff(t, W_prime, CP, Pmax));
+            const W_99 = 0.99 * W_prime;
+            const t_99_idx = Weff_plot.reduce((minIdx, val, idx, arr) => 
+                Math.abs(val - W_99) < Math.abs(arr[minIdx] - W_99) ? idx : minIdx, 0);
+            const t_99 = T_weff[t_99_idx];
+
+            const ctx3 = document.getElementById('chart3').getContext('2d');
+            try {
+                window.chart3 = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'W\'eff',
+                        data: T_weff.map((t, i) => ({x: t, y: Weff_plot[i]})),
+                        backgroundColor: 'transparent',
+                        borderColor: '#52c787',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'logarithmic',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'Time (s)',
+                                color: '#e8edf4',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 14,
+                                    weight: '600'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    // Solo alcuni valori specifici per evitare sovrapposizione
+                                    const logVal = Math.log10(value);
+                                    if (Math.abs(logVal - Math.round(logVal)) < 0.1) {
+                                        return formatTimeLabel(value);
+                                    }
+                                    return '';
+                                },
+                                color: '#a8b2c0',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 12
+                                },
+                                maxTicksLimit: 6
+                            },
+                            grid: {
+                                color: '#2a3448'
+                            },
+                            min: 1,
+                            max: 300
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'W\'eff (J)',
+                                color: '#e8edf4',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 14,
+                                    weight: '600'
+                                }
+                            },
+                            ticks: {
+                                color: '#a8b2c0',
+                                font: {
+                                    family: 'Fira Code',
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                color: '#2a3448'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(26, 32, 53, 0.95)',
+                            titleColor: '#e8edf4',
+                            bodyColor: '#a8b2c0',
+                            borderColor: '#2a3448',
+                            borderWidth: 1,
+                            callbacks: {
+                                title: function(context) {
+                                    if (context[0] && context[0].parsed && context[0].parsed.x) {
+                                        return `Time: ${formatTimeLabel(context[0].parsed.x)}`;
+                                    }
+                                    return '';
+                                },
+                                label: function(context) {
+                                    return `W'eff: ${typeof context.parsed.y === 'number' ? Math.round(context.parsed.y) : ''} J`;
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Fira Code',
+                                size: 18,
+                                weight: '600'
+                            },
+                            titleFont: {
+                                family: 'Fira Code',
+                                size: 18,
+                                weight: '700'
+                            },
+                            padding: 16
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'referenceLines',
+                    afterDraw: (chart) => {
+                        try {
+                            const {ctx, chartArea: {left, right, top, bottom}, scales: {x, y}} = chart;
+                            if (!x || !y || typeof x.getPixelForValue !== 'function' || typeof y.getPixelForValue !== 'function') return;
+                            
+                            const w99Y = y.getPixelForValue(W_99);
+                            const t99X = x.getPixelForValue(t_99);
+                            
+                            ctx.save();
+                            
+                            // 99% W' line
+                            ctx.strokeStyle = '#47c3f0';
+                            ctx.lineWidth = 2;
+                            ctx.setLineDash([5, 5]);
+                            ctx.beginPath();
+                            ctx.moveTo(left, w99Y);
+                            ctx.lineTo(right, w99Y);
+                            ctx.stroke();
+                            
+                            // Time line
+                            ctx.beginPath();
+                            ctx.moveTo(t99X, top);
+                            ctx.lineTo(t99X, w99Y);
+                            ctx.stroke();
+                            
+                            // Labels
+                            ctx.fillStyle = '#47c3f0';
+                            ctx.font = '12px Fira Code';
+                            ctx.textAlign = 'right';
+                            ctx.fillText('99% W\'eff', right - 10, w99Y - 5);
+                            
+                            ctx.textAlign = 'left';
+                            ctx.fillText(`at ${formatTimeLabel(t_99)}`, t99X + 5, top + 20);
+                            
+                            ctx.restore();
+                        } catch (e) {
+                            console.warn('Error drawing reference lines:', e);
+                        }
+                    }
+                }]
+            });
+            } catch (error) {
+                console.error('Error creating chart3:', error);
+                window.chart3 = null;
+            }
+        }
+
+        function logspace(start, stop, num) {
+            const logStart = Math.log10(start);
+            const logStop = Math.log10(stop);
+            const step = (logStop - logStart) / (num - 1);
+            return Array.from({length: num}, (_, i) => Math.pow(10, logStart + i * step));
+        }
+
+        // CSV handling
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            const colTimeSelect = document.getElementById('colTime');
+            const colPowerSelect = document.getElementById('colPower');
+            
+            colTimeSelect.innerHTML = '';
+            colPowerSelect.innerHTML = '';
+            
+            headers.forEach(header => {
+                const option1 = document.createElement('option');
+                option1.value = header;
+                option1.textContent = header;
+                colTimeSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = header;
+                option2.textContent = header;
+                colPowerSelect.appendChild(option2);
+            });
+
+            // Store parsed data
+            window.csvRawData = {headers, lines: lines.slice(1)};
+            
+            document.getElementById('csvControls').style.display = 'block';
+            
+            const maxTimeInput = document.getElementById('maxTime');
+            const allTimes = lines.slice(1).map(line => {
+                const values = line.split(',');
+                return parseFloat(values[0]) || 0;
+            });
+            maxTimeInput.value = Math.max(...allTimes);
+        }
+
+        function importCSVData() {
+            if (!window.csvRawData) return;
+
+            const colTime = document.getElementById('colTime').value;
+            const colPower = document.getElementById('colPower').value;
+            const maxTime = parseFloat(document.getElementById('maxTime').value);
+
+            const timeIdx = window.csvRawData.headers.indexOf(colTime);
+            const powerIdx = window.csvRawData.headers.indexOf(colPower);
+
+            const timeValues = [];
+            const powerValues = [];
+
+            window.csvRawData.lines.forEach(line => {
+                const values = line.split(',');
+                const t = parseFloat(values[timeIdx]);
+                const p = parseFloat(values[powerIdx]);
+                
+                if (!isNaN(t) && !isNaN(p) && t <= maxTime && t > 0 && p > 0) {
+                    timeValues.push(t);
+                    powerValues.push(p);
+                }
+            });
+
+            if (timeValues.length < 4) {
+                alert('Non ci sono abbastanza dati validi nel CSV!');
+                return;
+            }
+
+            csvData = { timeValues, powerValues };
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success';
+            alertDiv.textContent = `Dati importati: ${timeValues.length} punti (tempo ≤ ${maxTime}s)`;
+            document.getElementById('csvControls').appendChild(alertDiv);
+
+            performCalculation(timeValues, powerValues);
+        }
+
+        // Quick calculator
+        function quickCalculate() {
+            if (!calculatedParams) {
+                document.getElementById('quickResult').innerHTML = 
+                    '<div class="alert alert-warning">⚠ Per calcolare è necessario importare CSV O calcolare con i valori manuali</div>';
+                return;
+            }
+
+            const t = parseFloat(document.getElementById('tCalc').value) || 1200;
+            const {CP, W_prime, Pmax, A} = calculatedParams;
+            const P_calc = ompd_power(t, CP, W_prime, Pmax, A);
+            
+            let html = `<div class="quick-calc-result">${formatTimeLabel(t)} → ${Math.round(P_calc)} W</div>`;
+            html += '<p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">(per aggiornare premere "Enter" dopo aver cambiato t)</p>';
+
+            if (csvData) {
+                const idx = csvData.timeValues.reduce((minIdx, time, i, arr) => 
+                    Math.abs(time - t) < Math.abs(arr[minIdx] - t) ? i : minIdx, 0);
+                const P_real = Math.round(csvData.powerValues[idx]);
+                html += `<p style="margin-top: 1rem; color: var(--accent-secondary);">Valore reale CSV: ${P_real} W</p>`;
+            }
+
+            document.getElementById('quickResult').innerHTML = html;
+        }
+
+        // Initialize
+        createInputRows();
+    </script>
+</body>
+</html>
