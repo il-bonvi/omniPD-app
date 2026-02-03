@@ -496,7 +496,7 @@
                     <input type="number" id="minPercentile" min="0" max="100" value="70">
                     <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Inserisci il percentile minimo (default 70). Verranno selezionati solo i punti per finestra con residual ≥ percentile selezionato.</div>
                 </div>
-                <div class="input-field" style="margin-bottom: 1rem;">
+                <div class="input-field" style="margin-bottom: 1rem;"></div>
                     <label for="valuesPerWindow">Numero massimo di punti per finestra</label>
                     <input type="number" id="valuesPerWindow" min="1" max="10" value="1">
                     <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:6px;">Numero massimo di punti da selezionare per ogni finestra temporale (default e consigliato 1).</div>
@@ -1360,13 +1360,6 @@
             window.csvRawData = {headers, lines: lines.slice(1)};
             
             document.getElementById('csvControls').style.display = 'block';
-            
-            const maxTimeInput = document.getElementById('maxTime');
-            const allTimes = lines.slice(1).map(line => {
-                const values = line.split(',');
-                return parseFloat(values[0]) || 0;
-            });
-            maxTimeInput.value = Math.max(...allTimes);
         }
 
         function importCSVData() {
