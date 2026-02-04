@@ -620,8 +620,8 @@
         </header>
 
         <div class="info-box">
-            <p><strong>📊 Modello omniPD</strong> - Calcolo dei parametri di potenza (CP, W', Pmax, A) basato sul modello OmniPD.</p>
-            <p>Importa un file CSV con colonne tempo/potenza oppure inserisci i dati manualmente. Il modello fitterà la curva P(t) = CP + W'/(t + W'/(Pmax - CP)) × e^(-A×t).</p>
+                        <p><strong>📊 Modello omniPD</strong> - Calcolo dei parametri di potenza (CP, W', Pmax, A) basato sul modello OmniPD.</p>
+                        <p>Importa un file CSV con colonne tempo/potenza oppure inserisci i dati manualmente. Il modello fitterà la curva secondo la seguente formula a due parti:<br>P(t) = (W'/t) × (1 - e^(-t × (Pmax - CP) / W')) + CP per t ≤ TCPmax;<br>P(t) = (W'/t) × (1 - e^(-t × (Pmax - CP) / W')) + CP - A × ln(t / TCPmax) per t &gt; TCPmax, dove TCPmax = 1800 s (30 minuti).</p></pre>
         </div>
 
         <!-- Manual Input Section -->
