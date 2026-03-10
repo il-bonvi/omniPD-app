@@ -1633,6 +1633,74 @@
             reader.readAsText(file);
         }
 
+        // Returns the highest integer percentile (0-99) that still yields >= minPoints selected points.
+        // Returns null if even percentile=0 doesn't yield enough points.
+        function findMaxPercentileForMinPoints(times, powers, residuals, sprintSeconds, valuesPerWindow, minPoints) {
+            const timeWindows = [
+                [120, 240],
+                [240, 480],
+                [480, 900],
+                [900, 1800],
+                [1800, 2700]
+            ];
+            const residualsClean = residuals.filter(r => !isNaN(r)).slice().sort((a, b) => a - b);
+            if (residualsClean.length === 0) return null;
+
+            function countSelected(pct) {
+                const h = (residualsClean.length - 1) * (pct / 100);
+                const floor_idx = Math.floor(h);
+                const ceil_idx = Math.ceil(h);
+                const frac = h - floor_idx;
+                let threshold;
+                if (floor_idx === ceil_idx) {
+                    threshold = residualsClean[floor_idx];
+                } else {
+                    threshold = residualsClean[floor_idx] * (1 - frac) + residualsClean[ceil_idx] * frac;
+                }
+                if (isNaN(threshold)) threshold = Math.min(...residualsClean);
+
+                let count = 0;
+                const selectedMask = new Array(times.length).fill(false);
+
+                for (const [tmin, tmax] of timeWindows) {
+                    const windowIndices = [];
+                    for (let i = 0; i < times.length; i++) {
+                        if (times[i] >= tmin && times[i] <= tmax) windowIndices.push(i);
+                    }
+                    if (windowIndices.length === 0) continue;
+                    windowIndices.sort((a, b) => residuals[b] - residuals[a]);
+                    let windowCount = 0;
+                    for (const i of windowIndices) {
+                        if (!isNaN(residuals[i]) && residuals[i] >= threshold && !selectedMask[i]) {
+                            selectedMask[i] = true;
+                            count++;
+                            windowCount++;
+                            if (windowCount >= valuesPerWindow) break;
+                        }
+                    }
+                }
+
+                // Sprint point
+                if (sprintSeconds > 0) {
+                    let minDist = Infinity, sprintIdx = -1;
+                    for (let i = 0; i < times.length; i++) {
+                        const dist = Math.abs(times[i] - sprintSeconds);
+                        if (dist < minDist) { minDist = dist; sprintIdx = i; }
+                    }
+                    if (sprintIdx >= 0 && !selectedMask[sprintIdx] && !isNaN(times[sprintIdx]) && !isNaN(powers[sprintIdx])) {
+                        count++;
+                    }
+                }
+                return count;
+            }
+
+            // Scan descending from 99 to 0, return first pct that gives enough points
+            for (let pct = 99; pct >= 0; pct--) {
+                if (countSelected(pct) >= minPoints) return pct;
+            }
+            return null;
+        }
+
         function parseCSV(text) {
             const lines = text.trim().split('\n');
             const headers = lines[0].split(',').map(h => h.trim());
@@ -1794,7 +1862,17 @@
 
                 // Check if enough data selected (minimum: 1 sprint + 2 other points)
                 if (selectedTimes.length < 3) {
-                    throw new Error("POCHI DATI! Servono almeno 3 punti (1 sprint + 2 altri). Diminuisci il filtro percentile o aggiungi dati.");
+                    // Find the maximum percentile that would yield at least 3 points
+                    const maxUsablePercentile = findMaxPercentileForMinPoints(allTimes, allPowers, allResiduals, sprintSeconds, valuesPerWindow, 3);
+                    const suggestMsg = maxUsablePercentile !== null
+                        ? `\n\n💡 Suggerimento: abbassa il percentile a ${maxUsablePercentile}% per ottenere almeno 3 punti.`
+                        : '\n\n💡 Il CSV non contiene abbastanza punti nelle finestre temporali richieste (2–45 min). Prova a caricare un file con più dati.';
+                    showCustomAlert(
+                        `⚠️ Punti selezionati insufficienti (${selectedTimes.length}/3 minimi).\n\nIl filtro percentile (${minPct}%) è troppo alto: non restano abbastanza punti nelle finestre temporali.${suggestMsg}`,
+                        'Troppo pochi punti',
+                        '📉'
+                    );
+                    return;
                 }
 
                 // Sort selected data by time for proper plotting
@@ -1822,7 +1900,7 @@
                 }, 200);
             } catch (e) {
                 console.error('Errore importCSVData:', e);
-                showCustomAlert('Errore durante il processamento del CSV. Controlla il formato e riprova.');
+                showCustomAlert('Errore imprevisto durante il processamento del CSV. Controlla il formato del file e riprova.');
             }
         }
 
@@ -1917,7 +1995,16 @@
 
             // Check if enough data selected (minimum: 1 sprint + 2 other points)
             if (selectedTimes.length < 3) {
-                throw new Error("Nessun dato selezionato dalle finestre temporali con questo percentile");
+                const maxUsablePercentile = findMaxPercentileForMinPoints(allTimes, allPowers, allResiduals, sprintSeconds, valuesPerWindow, 3);
+                const suggestMsg = maxUsablePercentile !== null
+                    ? `\n\n💡 Suggerimento: abbassa il percentile a ${maxUsablePercentile}% per ottenere almeno 3 punti.`
+                    : '\n\n💡 Il CSV non contiene abbastanza punti nelle finestre temporali richieste (2–45 min).';
+                showCustomAlert(
+                    `⚠️ Punti selezionati insufficienti (${selectedTimes.length}/3 minimi).\n\nIl filtro percentile (${minPct}%) è troppo alto: non restano abbastanza punti nelle finestre temporali.${suggestMsg}`,
+                    'Troppo pochi punti',
+                    '📉'
+                );
+                return;
             }
 
             console.log(`Percentile ${minPct}: ${selectedTimes.length} punti selezionati (soglia: ${percentileThreshold.toFixed(2)})`);
