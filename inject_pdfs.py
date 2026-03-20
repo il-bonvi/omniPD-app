@@ -47,9 +47,6 @@ def pdf_block(idx, filename, label, b64):
       <iframe src="data:application/pdf;base64,{b64}"
               width="100%" height="640"
               title="{label}"></iframe>
-      <a class="pdf-dl"
-         href="data:application/pdf;base64,{b64}"
-         download="{filename}">&#x2B07; Scarica &ldquo;{label}&rdquo;</a>
     </div>
   </div>"""
 
