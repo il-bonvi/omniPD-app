@@ -64,39 +64,24 @@ HTML = """\
   <title>Guide omniPD</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Crimson+Pro:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Variabili che replicano la palette di index.html */
-    :root {
-      --acc:    #667eea;
-      --acc2:   #764ba2;
-      --border: #e0e7ff;
-      --bg:     #ffffff;
-      --radius: 14px;
-      --shadow: 0 4px 20px rgba(102,126,234,.13);
-    }
+    /* Tutti gli stili sono scopati dentro #guidesContainer
+       per non inquinare index.html quando vengono iniettati via fetch */
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* body trasparente: vediamo lo sfondo di index.html attraverso */
-    body { font-family: 'Crimson Pro', serif; background: transparent; }
-
-    /* ── Card ── */
-    .pdf-card {
-      background: var(--bg);
-      border: 2px solid var(--border);
-      border-radius: var(--radius);
+    #guidesContainer .pdf-card {
+      background: #ffffff;
+      border: 2px solid #e0e7ff;
+      border-radius: 14px;
       margin-bottom: 14px;
       overflow: hidden;
-      box-shadow: var(--shadow);
+      box-shadow: 0 4px 20px rgba(102,126,234,.13);
       transition: box-shadow .25s, transform .25s;
     }
-    .pdf-card:hover {
+    #guidesContainer .pdf-card:hover {
       box-shadow: 0 8px 28px rgba(102,126,234,.22);
       transform: translateY(-2px);
     }
 
-    /* ── Toggle button ── */
-    .pdf-toggle {
-      /* reset totale: sovrascriviamo il button globale di index.html */
+    #guidesContainer .pdf-toggle {
       all: unset;
       box-sizing: border-box;
       display: flex;
@@ -108,48 +93,44 @@ HTML = """\
       font-family: 'Crimson Pro', serif;
       font-size: 1.15rem;
       font-weight: 600;
-      color: var(--acc);
+      color: #667eea;
       transition: background .2s;
-      border-radius: var(--radius) var(--radius) 0 0;
+      border-radius: 14px 14px 0 0;
     }
-    .pdf-toggle:hover   { background: rgba(102,126,234,.06); }
-    .pdf-toggle:focus-visible { outline: 3px solid var(--acc); outline-offset: -3px; }
+    #guidesContainer .pdf-toggle:hover { background: rgba(102,126,234,.06); }
+    #guidesContainer .pdf-toggle:focus-visible { outline: 3px solid #667eea; outline-offset: -3px; }
 
-    .pdf-icon  { font-size: 1.35rem; flex-shrink: 0; }
-    .pdf-label { flex: 1; }
-    .pdf-chevron {
+    #guidesContainer .pdf-icon  { font-size: 1.35rem; flex-shrink: 0; }
+    #guidesContainer .pdf-label { flex: 1; }
+    #guidesContainer .pdf-chevron {
       font-size: .85rem;
-      color: var(--acc2);
+      color: #764ba2;
       flex-shrink: 0;
       transition: transform .3s ease;
     }
-    .pdf-toggle[aria-expanded="true"] .pdf-chevron { transform: rotate(180deg); }
+    #guidesContainer .pdf-toggle[aria-expanded="true"] .pdf-chevron { transform: rotate(180deg); }
 
-    /* ── Body (PDF + download) ── */
-    .pdf-body {
-      padding: 0 20px 20px;
-    }
-    .pdf-body[hidden] { display: none; }   /* rispetta l'attributo hidden */
+    #guidesContainer .pdf-body { padding: 0 20px 20px; }
+    #guidesContainer .pdf-body[hidden] { display: none; }
+    #guidesContainer .pdf-body:not([hidden]) { animation: guideSlideDown .3s ease-out; }
 
-    /* animazione apertura */
-    .pdf-body:not([hidden]) { animation: slideDown .3s ease-out; }
-    @keyframes slideDown {
+    @keyframes guideSlideDown {
       from { opacity: 0; transform: translateY(-8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .pdf-body iframe {
+    #guidesContainer .pdf-body iframe {
       display: block;
-      border: 1px solid var(--border);
+      border: 1px solid #e0e7ff;
       border-radius: 10px;
       background: #f7f9fc;
     }
 
-    .pdf-dl {
+    #guidesContainer .pdf-dl {
       display: inline-block;
       margin-top: 12px;
       padding: 9px 20px;
-      background: linear-gradient(135deg, var(--acc), var(--acc2));
+      background: linear-gradient(135deg, #667eea, #764ba2);
       color: #fff;
       border-radius: 10px;
       text-decoration: none;
@@ -158,7 +139,7 @@ HTML = """\
       font-weight: 600;
       transition: opacity .2s, transform .2s;
     }
-    .pdf-dl:hover { opacity: .88; transform: translateY(-2px); }
+    #guidesContainer .pdf-dl:hover { opacity: .88; transform: translateY(-2px); }
   </style>
 </head>
 <body>
