@@ -613,6 +613,42 @@
         footer a:hover {
             text-shadow: 0 0 10px rgba(255,255,255,0.8);
         }
+
+        /* ── Guide section: neutralizza button globale sui toggle PDF ── */
+        #guidesContainer .pdf-toggle {
+            all: unset;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 18px 22px;
+            cursor: pointer;
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #667eea;
+            transition: background .2s;
+            border-radius: 14px 14px 0 0;
+        }
+        #guidesContainer .pdf-toggle:hover  { background: rgba(102,126,234,.06); }
+        #guidesContainer .pdf-toggle:active { transform: none; }
+
+        .guides-error {
+            background: rgba(240,100,71,.08);
+            border: 2px solid #f06447;
+            border-radius: 12px;
+            padding: 18px 22px;
+            font-family: 'Fira Code', monospace;
+            font-size: .85rem;
+            color: #b84030;
+            line-height: 1.9;
+        }
+        .guides-error code {
+            background: rgba(240,100,71,.12);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -625,6 +661,20 @@
         <div class="info-box">
                         <p><strong>📊 Modello omniPD</strong> - Calcolo dei parametri di potenza (CP, W', Pmax, A) basato sul modello OmniPD.</p>
                         <p>Importa un file CSV con colonne tempo/potenza oppure inserisci i dati manualmente. Il modello fitterà la curva secondo la seguente formula a due parti:<br>P(t) = (W'/t) × (1 - e^(-t × (Pmax - CP) / W')) + CP per t ≤ TCPmax;<br>P(t) = (W'/t) × (1 - e^(-t × (Pmax - CP) / W')) + CP - A × ln(t / TCPmax) per t &gt; TCPmax, dove TCPmax = 1800 s (30 minuti).</p></pre>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════
+             SEZIONE GUIDE
+             Il contenuto viene iniettato da guides.html tramite fetch().
+             guides.html è generato da inject_pdfs.py e committato nel repo.
+             ════════════════════════════════════════════════════════════ -->
+        <div class="section" id="guidesSection">
+            <h2>&#x1F4DA; Guide</h2>
+            <div id="guidesContainer">
+                <p style="color:#999; font-family:'Fira Code',monospace; font-size:.85rem;">
+                    Caricamento guide&hellip;
+                </p>
+            </div>
         </div>
 
         <!-- Manual Input Section -->
@@ -2078,6 +2128,44 @@
         document.getElementById('minPercentile').addEventListener('change', applyPercentileFilter);
         document.getElementById('valuesPerWindow').addEventListener('change', applyPercentileFilter);
         document.getElementById('sprintSeconds').addEventListener('change', applyPercentileFilter);
+    </script>
+    <script>
+    (function loadGuides() {
+        var container = document.getElementById('guidesContainer');
+        fetch('guides.html')
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(function(html) {
+                var parser = new DOMParser();
+                var doc    = parser.parseFromString(html, 'text/html');
+                var style = doc.querySelector('style');
+                if (style) {
+                    var s = document.createElement('style');
+                    s.textContent = style.textContent;
+                    document.head.appendChild(s);
+                }
+                container.innerHTML = '';
+                Array.from(doc.body.childNodes).forEach(function(node) {
+                    container.appendChild(document.importNode(node, true));
+                });
+                Array.from(doc.querySelectorAll('script')).forEach(function(orig) {
+                    var s = document.createElement('script');
+                    s.textContent = orig.textContent;
+                    document.body.appendChild(s);
+                });
+            })
+            .catch(function(err) {
+                container.innerHTML =
+                    '<div class="guides-error">' +
+                    '&#x26A0; <strong>Guide non disponibili</strong> (' + err.message + ').<br>' +
+                    '1. Assicurati di avere <code>tutorial_fast.pdf</code> e <code>guida_rapida_modello.pdf</code> nella cartella.<br>' +
+                    '2. Esegui: <code>python3 inject_pdfs.py</code> per generare <code>guides.html</code>.<br>' +
+                    '3. Committa e pusha: <code>git add guides.html &amp;&amp; git commit -m "update guides" &amp;&amp; git push</code>' +
+                    '</div>';
+            });
+    })();
     </script>
 </body>
 </html>
